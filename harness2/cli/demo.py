@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
+from ..core import feedback
 from ..core.schedule import mode_token, run_domain
 from ..demo import DemoAdapter, DemoProposer
 
@@ -29,23 +31,41 @@ def main(argv=None) -> int:
     parser.add_argument("--output", type=Path, default=Path("runs/demo"))
     parser.add_argument("--k", type=int, default=2)
     parser.add_argument("--mode", choices=("parallel", "sequential", "both"), default="both")
+    parser.add_argument(
+        "--feedback-dir",
+        type=Path,
+        default=None,
+        help="optional flat directory of UTF-8 <task>.md human notes",
+    )
     args = parser.parse_args(argv)
     if args.k < 1:
         parser.error("--k must be positive")
     root = args.output.expanduser().resolve()
     adapter = DemoAdapter(root)
+    try:
+        snapshot = feedback.freeze(args.feedback_dir, adapter.tasks())
+    except (ValueError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    if snapshot.unmatched:
+        print(f"feedback: ignoring unmatched files: {', '.join(snapshot.unmatched)}")
     proposer = DemoProposer(adapter.spec.channels["proposer"])
     modes = ("agg", "seq") if args.mode == "both" else (mode_token(args.mode),)
-    result = run_domain(
-        "accounting",
-        adapter.tasks(),
-        args.k,
-        adapter=adapter,
-        prop=proposer,
-        runs_root=adapter.spec.runs_root,
-        library_root=root / "library" / f"k{args.k}",
-        modes=modes,
-    )
+    try:
+        result = run_domain(
+            "accounting",
+            adapter.tasks(),
+            args.k,
+            adapter=adapter,
+            prop=proposer,
+            runs_root=adapter.spec.runs_root,
+            library_root=root / "library" / f"k{args.k}",
+            modes=modes,
+            feedback_snapshot=snapshot,
+        )
+    except (ValueError, RuntimeError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     result["execution_count"] = adapter.execution_count
     result["editor_calls"] = len(proposer._calls)
     report = root / "demo.json"

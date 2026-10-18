@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Callable, Sequence, TypeVar
 
 from . import context
+from . import feedback as feedback_store
 from . import prompts as P
 from .proposer import Proposer, ProposerError
 from .spec import BenchmarkAdapter, BenchPrompts, RunView, resolve_prompts
@@ -63,13 +64,20 @@ class Selection:
     experience: dict = field(default_factory=dict)
     trivial: bool = False
     evidence: str = "deliverable"
+    pool_kind: str = ""
+    asset_names: list[str] = field(default_factory=list)
+    selector_prompt_sha256: str = ""
+    experience_prompt_sha256: str = ""
+    experience_layout: str = ""
+    candidate_format_sha256: str = ""
+    feedback_fingerprint: str = ""
 
     def to_dict(self) -> dict:
         return {k: v for k, v in self.__dict__.items()}
 
 
 def assign_ids(labels: Sequence[str], *, task_id: str, k: int, mode: str) -> dict[str, str]:
-    """anon id -> label, by canonical sort then a seeded shuffle: stable across reruns."""
+    """anon id -> label, reproducible only for the same task, k, mode, and label set."""
     seed = int(hashlib.sha1(f"{task_id}|{k}|{mode}".encode()).hexdigest()[:12], 16)
     ordered = sorted(labels)
     random.Random(seed).shuffle(ordered)
@@ -209,14 +217,19 @@ def _write_candidates(
                 names.append(a.name)
             note = _assets_note(adapter, anon, names)
             asset_names.update(names)
-        header = (
-            f"<!-- candidate {anon}: {len(text):,} chars, {text.count(chr(10)) + 1:,} lines. "
-            f"COMPLETE -- nothing trimmed. Navigate with grep/offsets; evaluating a "
-            f"candidate means opening the part that determines whether it works.\n"
-            f"{note}-->\n"
+        (cand_dir / f"{anon}.md").write_text(
+            _candidate_header(anon, text, note) + text, encoding="utf-8"
         )
-        (cand_dir / f"{anon}.md").write_text(header + text, encoding="utf-8")
     return asset_names
+
+
+def _candidate_header(anon: str, text: str, note: str) -> str:
+    return (
+        f"<!-- candidate {anon}: {len(text):,} chars, {text.count(chr(10)) + 1:,} lines. "
+        f"COMPLETE -- nothing trimmed. Navigate with grep/offsets; evaluating a "
+        f"candidate means opening the part that determines whether it works.\n"
+        f"{note}-->\n"
+    )
 
 
 def _evidence_block(
@@ -232,6 +245,114 @@ def _evidence_block(
         + f": {shown}\n"
     )
     return _assets_line(adapter, shown), a_evid
+
+
+def _select_mission(
+    bp: BenchPrompts,
+    adapter: BenchmarkAdapter,
+    n_candidates: int,
+    ids: str,
+    *,
+    pool_kind: str,
+    asset_names: set[str],
+    feedback: bool = False,
+) -> str:
+    reference_only = bool(getattr(adapter, "deliverable_assets_reference_only", False))
+    a_line, a_evid = _evidence_block(asset_names, adapter, reference_only)
+    return "\n\n".join(
+        [
+            P.select(bp, n_candidates, pool_kind=pool_kind, assets_note=a_line, feedback=feedback),
+            "# YOUR EVIDENCE\n\nIt is on disk. Read it -- do not answer from this message alone.\n\n"
+            "context/task.md                 the instructions\n"
+            "context/source/                 task source materials, when supplied\n"
+            f"context/candidates/<id>.md      one file per candidate: {ids}\n"
+            + (context.FEEDBACK_LAYOUT_LINE + "\n" if feedback else "")
+            + a_evid
+            + (
+                "\nOpen every candidate before choosing"
+                + (
+                    ", INCLUDING the rendered evidence in its directory"
+                    if asset_names and not reference_only
+                    else ""
+                )
+                + f". Choose exactly one of: {ids}."
+            ),
+        ]
+    )
+
+
+def _experience_mission(
+    bp: BenchPrompts, chosen_label: str, why: str, layout: str, *, feedback: bool = False
+) -> str:
+    return "\n\n".join(
+        [
+            P.experience(bp, feedback=feedback),
+            "# WHAT HAPPENED\n\n"
+            f"Harness {chosen_label} was adopted. The selection reasoning was:\n\n{why}\n\n"
+            "context/adoption.json maps any anonymous IDs in that reasoning to rollout labels. "
+            "Compare context/harness/ with context/base_harness/ and the candidates in "
+            "context/pool/. Read the decisions and execution contrasts before writing.\n\n"
+            + layout,
+        ]
+    )
+
+
+def _sha(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _candidate_format_hash(adapter: BenchmarkAdapter, names: set[str]) -> str:
+    note = _assets_note(adapter, "{anon}", sorted(names)) if names else ""
+    return _sha(_candidate_header("{anon}", "", note))
+
+
+def prompt_hashes(task_id: str, adapter: BenchmarkAdapter, sel: dict, *, experience: bool) -> dict:
+    """Re-render the exact missions from durable inputs, without scratch directories.
+
+    Unlike a placeholder-template hash this includes the actual candidate IDs,
+    selection reasoning, evidence layout, and human-feedback prompt variant.
+    Feedback file bytes have their own fingerprint in the resume identity.
+    """
+    bp = resolve_prompts(adapter, task_id)
+    out = {
+        "selector_prompt_sha256": "",
+        "experience_prompt_sha256": "",
+        "candidate_format_sha256": "",
+    }
+    reviewed = bool(sel.get("feedback_fingerprint"))
+    n = int(sel.get("n_candidates") or 0)
+    if not sel.get("trivial") and n > 0:
+        out["candidate_format_sha256"] = _candidate_format_hash(
+            adapter, set(sel.get("asset_names") or [])
+        )
+        out["selector_prompt_sha256"] = _sha(
+            _select_mission(
+                bp,
+                adapter,
+                n,
+                ", ".join(sorted(sel.get("id_map") or {})),
+                pool_kind=str(sel.get("pool_kind") or ""),
+                asset_names=set(sel.get("asset_names") or []),
+                feedback=reviewed,
+            )
+        )
+    if experience:
+        out["experience_prompt_sha256"] = _sha(
+            _experience_mission(
+                bp,
+                str(sel.get("chosen_label") or ""),
+                str(sel.get("why") or ""),
+                str(sel.get("experience_layout") or ""),
+                feedback=reviewed,
+            )
+        )
+    return out
+
+
+def prompts_digest(task_id: str, adapter: BenchmarkAdapter, sel: dict, *, experience: bool) -> str:
+    return _sha(
+        json.dumps(prompt_hashes(task_id, adapter, sel, experience=experience), sort_keys=True)
+    )
 
 
 def _fallback(sel: Selection, pool: dict[str, RunView], pool_kind: str, exc: Exception) -> bool:
@@ -275,6 +396,7 @@ def run_selection(
     prop: Proposer,
     work_dir: Path,
     pool_kind: str = "mixed",
+    feedback: str = "",
 ) -> Selection:
     """Pick one output. A selector failure falls back to a delivered base and never raises;
     an adapter bug does raise, because it is a bug and not a selection outcome.
@@ -282,7 +404,14 @@ def run_selection(
     `pool_kind="finals"` adjusts only the wording shown to the selector and the failure
     fallback; the default is byte-identical to the mixed-pool behaviour.
     """
-    sel = Selection(task_id=task_id, mode=mode, k=k)
+    feedback = feedback_store.validate_text(feedback)
+    sel = Selection(
+        task_id=task_id,
+        mode=mode,
+        k=k,
+        pool_kind=pool_kind,
+        feedback_fingerprint=feedback_store.fingerprint(feedback),
+    )
     bp = resolve_prompts(adapter, task_id)
 
     pool, artifacts = _render_pool(candidates, adapter, sel)
@@ -299,35 +428,29 @@ def run_selection(
     root.mkdir(parents=True, exist_ok=True)
     (root / "task.md").write_text(adapter.task_prompt(task_id), encoding="utf-8")
     context.copy_source(adapter, task_id, root)
+    if feedback:
+        (root / "feedback.md").write_text(feedback + "\n", encoding="utf-8")
 
     cand_dir = root / "candidates"
     cand_dir.mkdir(exist_ok=True)
     asset_names = _write_candidates(sel, artifacts, pool, cand_dir, adapter)
 
+    sel.asset_names = sorted(asset_names)
+    sel.candidate_format_sha256 = _candidate_format_hash(adapter, asset_names)
+
     ids = ", ".join(sorted(sel.id_map))
-    reference_only = bool(getattr(adapter, "deliverable_assets_reference_only", False))
-    a_line, a_evid = _evidence_block(asset_names, adapter, reference_only)
-    mission = "\n\n".join(
-        [
-            P.select(bp, len(pool), pool_kind=pool_kind, assets_note=a_line),
-            "# YOUR EVIDENCE\n\nIt is on disk. Read it -- do not answer from this message alone.\n\n"
-            "context/task.md                 the instructions\n"
-            "context/source/                 task source materials, when supplied\n"
-            f"context/candidates/<id>.md      one file per candidate: {ids}\n"
-            + a_evid
-            + (
-                "\nOpen every candidate before choosing"
-                + (
-                    ", INCLUDING the rendered evidence in its directory"
-                    if asset_names and not reference_only
-                    else ""
-                )
-                + f". Choose exactly one of: {ids}."
-            ),
-        ]
+    mission = _select_mission(
+        bp,
+        adapter,
+        len(pool),
+        ids,
+        pool_kind=pool_kind,
+        asset_names=asset_names,
+        feedback=bool(feedback),
     )
 
     context.assert_no_grader_verdicts(root)
+    sel.selector_prompt_sha256 = _sha(mission)
 
     try:
         reply = prop.call(mission, root, f"select.{mode}{k}")
@@ -408,8 +531,11 @@ def reflect_adoption(
     prop: Proposer,
     work_dir: Path,
     decisions: dict[str, str] | None = None,
+    feedback: str = "",
 ) -> dict:
     """Learn from harness edits, decisions, trajectories, and deliverables after adoption."""
+    feedback = feedback_store.validate_text(feedback)
+    sel.feedback_fingerprint = feedback_store.fingerprint(feedback)
     chosen = candidates.get(sel.chosen_label)
     if not sel.ok or chosen is None:
         return {}
@@ -427,6 +553,7 @@ def reflect_adoption(
             if not label.startswith("base")
         ],
         decisions=decisions,
+        feedback=feedback,
     )
     shutil.copytree(adapter.base_harness(), root / "base_harness")
     (root / "adoption.json").write_text(
@@ -444,7 +571,14 @@ def reflect_adoption(
     context.assert_no_leak_paths(root, adapter.spec.leak_globs)
     context.assert_no_grader_verdicts(root)
     experience = _distil(
-        task_id, sel, candidates, adapter=adapter, prop=prop, root=root, layout=evidence.layout
+        task_id,
+        sel,
+        candidates,
+        adapter=adapter,
+        prop=prop,
+        root=root,
+        layout=evidence.layout,
+        feedback=bool(feedback),
     )
     sel.experience = experience
     _persist(sel, Path(work_dir) / "selection" / f"{sel.mode}{sel.k}", str(chosen.run_dir))
@@ -461,19 +595,18 @@ def _distil(
     root: Path,
     bp: BenchPrompts | None = None,
     layout: str = "",
+    feedback: bool = False,
 ) -> dict:
     """Extract a supported lesson from the complete task-local improvement record."""
-    mission = "\n\n".join(
-        [
-            P.experience(bp or resolve_prompts(adapter, task_id)),
-            "# WHAT HAPPENED\n\n"
-            f"Harness {sel.chosen_label} was adopted. The selection reasoning was:\n\n{sel.why}\n\n"
-            "context/adoption.json maps any anonymous IDs in that reasoning to rollout labels. "
-            "Compare context/harness/ with context/base_harness/ and the candidates in "
-            "context/pool/. Read the decisions and execution contrasts before writing.\n\n"
-            + layout,
-        ]
+    mission = _experience_mission(
+        bp or resolve_prompts(adapter, task_id),
+        sel.chosen_label,
+        sel.why,
+        layout,
+        feedback=feedback,
     )
+    sel.experience_layout = layout
+    sel.experience_prompt_sha256 = _sha(mission)
     exp_root = root.with_name(root.name + ".experience")
     shutil.rmtree(exp_root, ignore_errors=True)
     shutil.copytree(root, exp_root, ignore=shutil.ignore_patterns("selection.json"))

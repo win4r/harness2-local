@@ -1,3 +1,8 @@
+> **Local fork · 0.1.0+local.1** — Independently maintained local copy, based on
+> upstream `1cfe254`. Includes reviewed opt-in human feedback and correctness fixes.
+> See [本地使用与变更说明](docs/LOCAL_FORK.md) and [PR provenance](docs/LOCAL_UPSTREAM_REVIEW.json).
+> Run `./start-demo.command` for the offline demo. Original upstream README follows.
+
 <h3 align="center">
   <img src="assets/Harness2-wordmark.png" alt="Harness²" width="360"><br>
   Recursive Agent Harnessing for an Open World

@@ -21,12 +21,27 @@ excluded from the denominator.
 from __future__ import annotations
 
 import json
+import math
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence
 
 from .spec import BenchmarkAdapter
+
+
+def has_grade(n_passed: int | float | None, n_criteria: int | float | None) -> bool:
+    """Accept finite count or weighted-point scores in [0, denominator].
+
+    JSON booleans are not counts, and malformed/nonfinite values must not enter
+    report denominators. Integer and floating-point weights are both legitimate.
+    """
+    for value in (n_passed, n_criteria):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return False
+        if isinstance(value, float) and not math.isfinite(value):
+            return False
+    return n_criteria > 0 and 0 <= n_passed <= n_criteria
 
 
 @dataclass
@@ -37,8 +52,9 @@ class Scored:
     label: str
     run_id: str
     chosen_is_base: bool
-    n_passed: int | None = None
-    n_criteria: int | None = None
+    selected_at: str = ""
+    n_passed: int | float | None = None
+    n_criteria: int | float | None = None
     all_pass: bool = False
     raw: dict = field(default_factory=dict)
     error: str = ""
@@ -46,7 +62,7 @@ class Scored:
     @property
     def graded(self) -> bool:
         """Whether the judge succeeded, not whether the run did well."""
-        return self.n_criteria is not None and self.n_criteria > 0
+        return has_grade(self.n_passed, self.n_criteria)
 
     @property
     def frac(self) -> float | None:
@@ -68,9 +84,16 @@ def judge_one(
     run_dir: Path,
     *,
     chosen_is_base: bool = False,
+    selected_at: str = "",
 ) -> Scored:
     s = Scored(
-        task_id=task_id, mode=mode, k=k, label=label, run_id=run_id, chosen_is_base=chosen_is_base
+        task_id=task_id,
+        mode=mode,
+        k=k,
+        label=label,
+        run_id=run_id,
+        chosen_is_base=chosen_is_base,
+        selected_at=selected_at,
     )
     try:
         got = adapter.score(run_dir, task_id)
@@ -83,6 +106,9 @@ def judge_one(
     s.raw = dict(got)
     s.n_passed = got.get("n_passed")
     s.n_criteria = got.get("n_criteria")
+    if not s.graded:
+        s.error = "judge returned invalid score counts"
+        return s
     s.all_pass = bool(got.get("all_pass", s.graded and s.n_passed == s.n_criteria))
     return s
 
@@ -107,6 +133,7 @@ def judge_selections(
                         label=sel.get("chosen_label", ""),
                         run_id=sel.get("chosen_run_id", ""),
                         chosen_is_base=bool(sel.get("chosen_is_base")),
+                        selected_at=sel.get("selected_at", ""),
                         error="selection did not complete successfully",
                     )
                 )
@@ -122,6 +149,7 @@ def judge_selections(
                     sel.get("chosen_run_id", ""),
                     Path(rd),
                     chosen_is_base=bool(sel.get("chosen_is_base")),
+                    selected_at=sel.get("selected_at", ""),
                 )
             ] = sel
         for f in as_completed(futs):
@@ -137,6 +165,7 @@ def judge_selections(
                         label=sel.get("chosen_label", ""),
                         run_id=sel.get("chosen_run_id", ""),
                         chosen_is_base=bool(sel.get("chosen_is_base")),
+                        selected_at=sel.get("selected_at", ""),
                         error=f"{type(exc).__name__}: {exc}",
                     )
                 )

@@ -122,6 +122,7 @@ def _accept_tree(
         harness_tree.validate(
             surface,
             new,
+            base=fallback,
             allow_subagents=adapter.spec.allow_subagents,
             reserved_scripts=harness_tree.RESERVED_SCRIPTS | adapter.spec.reserved_scripts,
         )
@@ -150,6 +151,18 @@ def _run_stage(
 ) -> Stage:
     """Build evidence, propose an edit, and retry an invalid proposal once."""
     surface = adapter.substrate.surface()
+
+    def retry_workspace(proposed: harness_tree.Tree, dest: Path) -> None:
+        # Retain repairable edits, but never give a retry modified runner helpers.
+        # These scripts are inherited from the stage baseline and are immutable.
+        retry = dict(proposed)
+        for name in harness_tree.RESERVED_SCRIPTS | adapter.spec.reserved_scripts:
+            rel = f"scripts/{name}"
+            if rel in fallback:
+                retry[rel] = fallback[rel]
+            else:
+                retry.pop(rel, None)
+        harness_tree.write_tree(surface, retry, dest)
 
     try:
         tree = context.build(
@@ -221,11 +234,13 @@ def _run_stage(
                 f"(e.g. `{surface.skill_dir}/doc_review/SKILL.md`, "
                 f"`scripts/check_totals.py`)."
             )
+            # The retry reads a fresh copy of `context/`, so it must hold this attempt's edits.
+            retry_workspace(new, tree.root / "harness")
             continue
 
         kept, err = _accept_tree(surface, adapter, new, fallback, label)
         if err:
-            harness_tree.write_tree(surface, new, tree.root / "harness")
+            retry_workspace(new, tree.root / "harness")
             continue
         notes = re.search(r"<notes>(.*?)</notes>", reply.text, re.S)
         return Stage(

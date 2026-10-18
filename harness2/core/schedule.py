@@ -20,6 +20,7 @@ globs over one. Scheme: <bench>-<substrate>-<mode><k>[-s<seed>][-<tag>].
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import random
@@ -27,16 +28,18 @@ import re
 import traceback
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping, Sequence
 
+from . import context, recursion, runmark, selection
+from . import feedback as feedback_store
 from . import library as library_store
-from . import recursion, runmark, selection
+from . import prompts as P
 from . import tree as harness_tree
 from .proposer import Proposer
-from .spec import BenchmarkAdapter, RunView
+from .spec import BenchmarkAdapter, RunView, resolve_prompts
 
 MODES = ("agg", "seq")
 MODE_NAMES = {"agg": "parallel", "seq": "sequential"}
@@ -347,6 +350,165 @@ def _resolve_libraries(
     return mode_libs
 
 
+def _freeze_feedback(feedback_dir, snapshot, task_ids) -> feedback_store.Snapshot:
+    if feedback_dir is not None and snapshot is not None:
+        raise ValueError("pass feedback_dir or feedback_snapshot, not both")
+    if snapshot is None:
+        return feedback_store.freeze(feedback_dir, task_ids)
+    if not isinstance(snapshot, feedback_store.Snapshot):
+        raise TypeError("feedback_snapshot must be a feedback.Snapshot")
+    for task_id in task_ids:
+        snapshot.text(task_id)
+    return snapshot
+
+
+def _claim_task_inputs(
+    work: Path, adapter: BenchmarkAdapter, task_id: str, prop: Proposer, selector: Proposer
+) -> dict:
+    """Bind cached execution IDs to source/prompt/base contents, for every entry point.
+
+    Adapters may cache by run_id independently of this scheduler. Re-running them
+    under an old ID after inputs change is therefore unsafe. Require a fresh
+    namespace instead, without deleting or silently overwriting earlier evidence.
+    """
+    import fcntl
+
+    identity = {
+        "version": 1,
+        "task_id": task_id,
+        "task_prompt_sha256": hashlib.sha256(
+            adapter.task_prompt(task_id).encode("utf-8")
+        ).hexdigest(),
+        "task_source_sha256": context.source_fingerprint(adapter, task_id),
+        "base_harness_fingerprint": runmark.fingerprint(adapter.base_harness()),
+        "adapter": f"{type(adapter).__module__}.{type(adapter).__qualname__}",
+        "channels": {name: asdict(spec) for name, spec in adapter.spec.channels.items()},
+        "effective_proposer": asdict(prop.spec),
+        "effective_selector": asdict(selector.spec),
+    }
+    path = work / ".task-inputs.json"
+    with (work / ".task-inputs.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            if path.exists():
+                previous = json.loads(path.read_text(encoding="utf-8"))
+                if previous != identity:
+                    raise ValueError(
+                        "Task source, prompt, base harness, or execution configuration changed; "
+                        "use a fresh tag/run root so adapter caches cannot reuse old inputs."
+                    )
+            elif (work / "summary.json").exists():
+                raise ValueError(
+                    "Legacy task cache has no verified input identity; use a fresh tag/run root."
+                )
+            else:
+                tmp = path.with_suffix(".tmp")
+                tmp.write_text(
+                    json.dumps(identity, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                os.replace(tmp, path)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+    return identity
+
+
+def _editor_prompts_digest(adapter: BenchmarkAdapter, task_id: str, mode: str, k: int) -> str:
+    """Hash the rendered authoring jobs and shared evidence instructions for this mode.
+
+    Evidence values are placeholders here: source, base and library identities are
+    checked separately. Selection/reflection-only text is deliberately excluded.
+    """
+    bp = resolve_prompts(adapter, task_id)
+    surface = adapter.substrate.surface()
+    evidence = context.ContextTree(
+        root=Path("."),
+        task_id=task_id,
+        rollouts=["<rollout>"],
+        deliverables=["<deliverable>"],
+        harness_files=1,
+        library=True,
+        pool=["<candidate>"],
+        source_files=1,
+        decisions=1,
+        deliverables_mode="names" if adapter.spec.proposer_deliverables == "names" else "contents",
+    )
+    missions = []
+    for index in range(1, k + 1):
+        for dim in ("INV", "DOM"):
+            job = P.propose(
+                bp,
+                dim,
+                surface,
+                k=k,
+                index=index,
+                round_t=index if mode == "seq" and k > 1 else None,
+            )
+            missions.append(context.mission(evidence, job=job))
+        if mode == "seq" and k > 1:
+            job = P.compose_round(bp, surface, t=index, k=k)
+        else:
+            job = P.aggregate(bp, surface, k=k, index=index)
+        missions.append(context.mission(evidence, job=job))
+    return hashlib.sha256(json.dumps(missions, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+def _claim_editor_prompts(
+    work: Path, summary_path: Path, adapter: BenchmarkAdapter, task_id: str, mode: str, k: int
+) -> None:
+    """Require a new execution namespace when its authoring method changes."""
+    import fcntl
+
+    work.mkdir(parents=True, exist_ok=True)
+    path = work / ".editor-prompts.json"
+    identity = {
+        "version": 1,
+        "mode": mode,
+        "k": k,
+        "authoring_template_sha256": _editor_prompts_digest(adapter, task_id, mode, k),
+    }
+    with (work / ".editor-prompts.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            if path.exists():
+                if json.loads(path.read_text(encoding="utf-8")) != identity:
+                    raise ValueError(
+                        f"Authoring prompts changed for {mode}; use a fresh tag/run root "
+                        "so old execution IDs cannot stand in for the new method."
+                    )
+            elif mode in _modes_of(_load_old(summary_path)):
+                raise ValueError(
+                    f"Legacy {mode} cache has no verified authoring prompt identity; "
+                    "use a fresh tag/run root."
+                )
+            else:
+                tmp = path.with_suffix(".tmp")
+                tmp.write_text(
+                    json.dumps(identity, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                os.replace(tmp, path)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def _invalidate_selections(summary_path: Path, modes: Sequence[str], res: TaskResult) -> None:
+    """Retire old adoptions before any fixed run-ID artifact can be overwritten.
+
+    A new failed/in-progress generation must be visible to judge watchers even
+    when base execution, authoring or reflection later raises. Other modes retain
+    their existing records through the ordinary atomic summary merge.
+    """
+    for mode in modes:
+        invalid = selection.Selection(task_id=res.task_id, mode=mode, k=res.k).to_dict()
+        invalid.update(
+            selected_at=datetime.now(timezone.utc).isoformat(),
+            error="selection invalidated: rerun in progress",
+            chosen_run_dir="",
+        )
+        res.selections[mode] = invalid
+        res.modes[mode] = {"ok": False, "error": "rerun in progress"}
+    _write_summary(summary_path, res)
+
+
 def _resume(
     summary_path: Path,
     task_id: str,
@@ -358,6 +520,7 @@ def _resume(
     tag: str,
     mode_libs: dict[str, library_store.Library],
     res: TaskResult,
+    feedback: str = "",
 ) -> bool:
     """Fill `res` from a cached summary covering every requested mode; True if it did."""
     try:
@@ -368,7 +531,7 @@ def _resume(
             flush=True,
         )
         return False
-    if got.get("status") != "ok":
+    if got.get("status") not in ("ok", "partial"):
         return False
     cached_modes = _modes_of(got)
     cached_sels = got.get("selections") or {}
@@ -390,7 +553,8 @@ def _resume(
     for mode in modes:
         sel = cached_sels[mode]
         namespace = Namespace(adapter.spec.name, adapter.substrate.name, mode, k, seed, tag)
-        harness_dir = namespace.task_dir(runs_root, task_id) / "harnesses" / sel["chosen_label"]
+        work_dir = namespace.task_dir(runs_root, task_id)
+        harness_dir = work_dir / "harnesses" / sel["chosen_label"]
         run_dir = Path(sel.get("chosen_run_dir") or "")
         try:
             if not sel.get("chosen_run_dir") or not run_dir.is_dir():
@@ -409,6 +573,29 @@ def _resume(
             fingerprint = sel.get("harness_fingerprint")
             if fingerprint and runmark.fingerprint(harness_dir) != fingerprint:
                 raise ValueError("adopted harness has changed")
+            if sel.get("feedback_fingerprint", "") != feedback_store.fingerprint(feedback):
+                raise ValueError("human feedback has changed")
+            lib = mode_libs.get(mode)
+            if bool(sel.get("experience_prompted")) != bool(lib):
+                raise ValueError("reflection/library participation changed")
+            if sel.get("library_fingerprint") != runmark.fingerprint(
+                lib.context_dir() if lib else None
+            ):
+                raise ValueError("the library it read has changed")
+            try:
+                want_prompts = selection.prompts_digest(
+                    task_id, adapter, sel, experience=bool(sel.get("experience_prompted"))
+                )
+            except Exception as exc:
+                raise ValueError(f"prompts digest failed ({type(exc).__name__}: {exc})") from exc
+            expected = selection.prompt_hashes(
+                task_id, adapter, sel, experience=bool(sel.get("experience_prompted"))
+            )
+            actual = {name: sel.get(name, "") for name in expected}
+            if actual != expected:
+                raise ValueError("rendered selection/experience prompts changed")
+            if sel.get("prompts_digest") != want_prompts:
+                raise ValueError("selection/experience prompts changed")
         except (OSError, RuntimeError, ValueError) as exc:
             print(f"  [{task_id}] cannot resume {mode}: {exc}; re-running", flush=True)
             return False
@@ -493,10 +680,12 @@ def _run_one_mode(
     surface,
     pool_policy: str,
     res: TaskResult,
+    feedback: str = "",
 ) -> None:
     """Run one recursion mode over the shared bases, select a final, and record it on `res`."""
     work_dir = n.task_dir(runs_root, task_id)
     lib_dir = mode_lib.context_dir() if mode_lib else None
+    lib_fingerprint = runmark.fingerprint(lib_dir)
     r = recursion.run_mode(
         mode,
         task_id,
@@ -525,7 +714,9 @@ def _run_one_mode(
             prop=selector,
             work_dir=work_dir,
             pool_kind="finals",
+            feedback=feedback,
         )
+    sel.feedback_fingerprint = feedback_store.fingerprint(feedback)
     if mode_lib and sel.ok:
         selection.reflect_adoption(
             task_id,
@@ -535,8 +726,13 @@ def _run_one_mode(
             prop=selector,
             work_dir=work_dir,
             decisions={stage.label: stage.notes or stage.error for stage in r.stages},
+            feedback=feedback,
         )
     d = sel.to_dict()
+    d["selected_at"] = datetime.now(timezone.utc).isoformat()
+    d["feedback_used"] = bool(
+        feedback and (sel.selector_prompt_sha256 or sel.experience_prompt_sha256)
+    )
     d["chosen_run_dir"] = str(
         candidates[sel.chosen_label].run_dir if sel.chosen_label in candidates else ""
     )
@@ -546,6 +742,20 @@ def _run_one_mode(
     d["chosen_tree_is_base"] = chosen_tree_is_base
     if sel.chosen_label:
         d["harness_fingerprint"] = runmark.fingerprint(work_dir / "harnesses" / sel.chosen_label)
+    d["library_fingerprint"] = lib_fingerprint
+    d["experience_prompted"] = bool(mode_lib and sel.ok)
+    try:
+        expected = selection.prompt_hashes(task_id, adapter, d, experience=d["experience_prompted"])
+        actual = {name: d[name] for name in expected}
+        if expected != actual:
+            raise ValueError("rendered prompt hash does not match its recorded inputs")
+        d["prompts_digest"] = selection.prompts_digest(
+            task_id, adapter, d, experience=d["experience_prompted"]
+        )
+    except Exception as exc:
+        # The paid sessions already ran; keep their result and let the next resume re-run.
+        d["prompts_digest"] = ""
+        res.errors.append(f"{mode}: prompts digest failed: {type(exc).__name__}: {exc}")
     res.selections[mode] = d
     if not sel.ok:
         res.errors.append(f"{mode}: selection failed: {sel.error}")
@@ -577,6 +787,8 @@ def run_task(
     libraries: dict[str, library_store.Library] | None = None,
     selector_prop: Proposer | None = None,
     pool_policy: str = "finals",
+    feedback_dir: Path | None = None,
+    feedback_snapshot: feedback_store.Snapshot | None = None,
 ) -> TaskResult:
     """k shared reference executions -> every mode -> blind selection per mode -> summary.json.
 
@@ -597,6 +809,11 @@ def run_task(
             f"unknown pool_policy {pool_policy!r}; this release builds exactly "
             f"one selection pool, 'finals' (the k composed finals)"
         )
+    snapshot = _freeze_feedback(feedback_dir, feedback_snapshot, [task_id])
+    feedback = snapshot.text(task_id)
+    for mode in modes:
+        namespace = Namespace(adapter.spec.name, adapter.substrate.name, mode, k, seed, tag)
+        feedback_store.claim_namespace(Path(runs_root) / str(namespace), snapshot)
     mode_libs = _resolve_libraries(library, libraries, modes)
     selector = _selector_for(adapter, prop, selector_prop)
     bench, sub = adapter.spec.name, adapter.substrate.name
@@ -607,12 +824,26 @@ def run_task(
     work = base_ns.task_dir(runs_root, task_id)
     work.mkdir(parents=True, exist_ok=True)
     summary_path = work / "summary.json"
+    _claim_task_inputs(work, adapter, task_id, prop, selector)
+    for mode in modes:
+        mode_work = Namespace(bench, sub, mode, k, seed, tag).task_dir(runs_root, task_id)
+        _claim_editor_prompts(mode_work, summary_path, adapter, task_id, mode, k)
+
+    # A direct run_task caller may pass back the same library that this task
+    # previously extended. Its own old lesson is not an input to this task.
+    # Successful resume restores it from the verified selection; a rerun replaces
+    # it only after a new successful reflection. All other entries are retained.
+    for mode in modes:
+        lib = mode_libs.get(mode)
+        if lib:
+            lib.forget([task_id])
 
     if summary_path.is_file() and _resume(
-        summary_path, task_id, k, adapter, runs_root, modes, seed, tag, mode_libs, res
+        summary_path, task_id, k, adapter, runs_root, modes, seed, tag, mode_libs, res, feedback
     ):
         return res
 
+    _invalidate_selections(summary_path, modes, res)
     surface = adapter.substrate.surface()
     base_tree = harness_tree.read_tree(surface, adapter.base_harness())
 
@@ -650,6 +881,7 @@ def run_task(
                 surface=surface,
                 pool_policy=pool_policy,
                 res=res,
+                feedback=feedback,
             )
         except Exception as exc:
             res.modes[mode] = {
@@ -680,8 +912,14 @@ def run_domain(
     tag: str = "",
     selector_prop: Proposer | None = None,
     pool_policy: str = "finals",
+    feedback_dir: Path | None = None,
+    feedback_snapshot: feedback_store.Snapshot | None = None,
 ) -> dict:
     """Every task in one domain, in `stream_order()` order, threading the library forward."""
+    snapshot = _freeze_feedback(feedback_dir, feedback_snapshot, task_ids)
+    for mode in modes:
+        namespace = Namespace(adapter.spec.name, adapter.substrate.name, mode, k, seed, tag)
+        feedback_store.claim_namespace(Path(runs_root) / str(namespace), snapshot)
     surface = adapter.substrate.surface()
     libs = {
         mode: library_store.Library(root=Path(library_root) / mode, domain=domain, surface=surface)
@@ -712,6 +950,7 @@ def run_domain(
                 libraries=libs,
                 selector_prop=selector_prop,
                 pool_policy=pool_policy,
+                feedback_snapshot=snapshot,
             )
             if r.status in ("ok", "skipped"):
                 out["done"] += 1
@@ -794,6 +1033,8 @@ def run_sweep(
     pool_policy: str = "finals",
     max_tasks: int | None = None,
     only_tasks: Sequence[str] = (),
+    feedback_dir: Path | None = None,
+    feedback_snapshot: feedback_store.Snapshot | None = None,
 ) -> dict:
     """Run domains concurrently, preserving task order after stream filters are applied."""
     ordered_tasks = task_stream(
@@ -805,6 +1046,16 @@ def run_sweep(
         max_tasks=max_tasks,
     )
     order = list(ordered_tasks)
+    snapshot = _freeze_feedback(
+        feedback_dir,
+        feedback_snapshot,
+        [task for tasks in ordered_tasks.values() for task in tasks],
+    )
+    for mode in modes:
+        namespace = Namespace(adapter.spec.name, adapter.substrate.name, mode, k, seed, tag)
+        feedback_store.claim_namespace(Path(runs_root) / str(namespace), snapshot)
+    if snapshot.unmatched:
+        print(f"feedback: ignoring unmatched files: {', '.join(snapshot.unmatched)}", flush=True)
 
     started = datetime.now(timezone.utc).isoformat()
     rows = []
@@ -825,6 +1076,7 @@ def run_sweep(
                 tag=tag,
                 selector_prop=selector,
                 pool_policy=pool_policy,
+                feedback_snapshot=snapshot,
             ): d
             for d in order
         }
@@ -840,6 +1092,8 @@ def run_sweep(
         "modes": list(modes),
         "seed": seed,
         "tag": tag,
+        "feedback": snapshot.enabled,
+        "feedback_snapshot_sha256": snapshot.digest,
         "domain_order": order,
         "max_tasks": max_tasks,
         "only_tasks": list(only_tasks),

@@ -30,7 +30,7 @@ import subprocess
 import tempfile
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .. import config
@@ -140,13 +140,15 @@ class Proposer:
         directory is destroyed -- e.g. "context/harness", which is how an edited tree comes back.
         """
 
-        cache_key = _call_fingerprint(label, mission, system, context_dir)
+        wall = int(timeout or self.spec.timeout)
+        cache_key = _call_fingerprint(
+            label, mission, system, context_dir, spec=self.spec, timeout=wall, harvest=harvest
+        )
         cached = self._cached(label, cache_key, require_workspace=bool(harvest))
         if cached is not None:
             self._calls.append(cached)
             return cached
 
-        wall = int(timeout or self.spec.timeout)
         tries = max(1, int(self.attempts if max_attempts is None else max_attempts))
         last = ""
         spent_usd = 0.0
@@ -301,10 +303,12 @@ class Proposer:
             timeout=wall,
         )
         cost = _opencode_cost(p.stdout)
+        text, err = _opencode_stdout(p.stdout)
+        if err:
+            return "", cost, err
         ans = out / "answer.md"
         if ans.is_file() and ans.read_text(errors="replace").strip():
             return ans.read_text(errors="replace"), cost, ""
-        text, err = _opencode_stdout(p.stdout)
         if text.strip():
             return text, cost, ""
         tail = _strip_oc_banner(p.stderr or "").strip()[-300:]
@@ -312,16 +316,27 @@ class Proposer:
 
     def _harvest(self, tmp: Path, sub: str, label: str, cache_key: str = "") -> Path | None:
         """Copy `tmp/<sub>` somewhere durable before the session directory is removed."""
-        src = tmp / sub
-        if not src.is_dir():
+        relative = Path(sub)
+        if relative.is_absolute() or ".." in relative.parts or not relative.parts:
+            return None
+        src = tmp / relative
+        # A symlink at any component could point outside the session, even when
+        # the final component itself is a regular directory.
+        if not src.is_dir() or any(
+            tmp.joinpath(*relative.parts[:i]).is_symlink()
+            for i in range(1, len(relative.parts) + 1)
+        ):
             return None
         dest = Path(self.audit_dir or tempfile.mkdtemp(prefix="harness2-harvest-"))
         safe = re.sub(r"[^A-Za-z0-9_.-]+", "_", label)
         if cache_key:
             safe = f"{safe}.{cache_key}"
         dest = dest / f"{safe}.workspace"
-        shutil.rmtree(dest, ignore_errors=True)
-        shutil.copytree(src, dest)
+        if dest.is_symlink():
+            dest.unlink()
+        else:
+            shutil.rmtree(dest, ignore_errors=True)
+        shutil.copytree(src, dest, symlinks=True)
         return dest
 
     def _paths(self, label: str, cache_key: str = "") -> dict[str, Path] | None:
@@ -343,7 +358,7 @@ class Proposer:
         p = self._paths(label, cache_key)
         if not p or not p["response"].is_file():
             return None
-        if require_workspace and not p["workspace"].is_dir():
+        if require_workspace and (not p["workspace"].is_dir() or p["workspace"].is_symlink()):
             return None
         txt = p["response"].read_text(encoding="utf-8", errors="replace")
         if not txt.strip():
@@ -476,8 +491,7 @@ def _opencode_stdout(stdout: str) -> tuple[str, str]:
                 msg = str(_obj(e, "data").get("message") or e.get("name") or "").strip()
             else:
                 msg = str(e or "").strip()
-            if msg:
-                errors.append(msg)
+            errors.append(msg or "OpenCode session error")
     if not saw_json:
         return _strip_oc_banner(stdout).strip(), ""
     return "\n\n".join(texts), "; ".join(errors)[-300:]
@@ -504,14 +518,25 @@ def _opencode_cost(stdout: str) -> float:
     return round(total, 6)
 
 
-def _call_fingerprint(label: str, mission: str, system: str, context_dir: Path | str | None) -> str:
-    """Content-address one call, including its evidence and its mode/task workspace path.
+def _call_fingerprint(
+    label: str,
+    mission: str,
+    system: str,
+    context_dir: Path | str | None,
+    *,
+    spec: ChannelSpec,
+    timeout: int | None = None,
+    harvest: str | None = None,
+) -> str:
+    """Content-address one call, including its channel, evidence and mode/task workspace path.
 
     The resolved path is part of the key: the two modes can have byte-identical k=1 evidence
     and must still be independent draws.
+    Channel settings isolate both cached replies and harvested harnesses across models.
     """
     h = hashlib.sha256()
-    for value in (label, mission, system):
+    settings = {"channel": asdict(spec), "timeout": timeout, "harvest": harvest}
+    for value in (label, mission, system, json.dumps(settings, sort_keys=True)):
         h.update(value.encode("utf-8", errors="replace"))
         h.update(b"\0")
     if context_dir:

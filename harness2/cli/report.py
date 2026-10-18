@@ -28,6 +28,7 @@ import json
 import sys
 from pathlib import Path
 
+from .. import config
 from ..core import report as R
 from ..core import schedule as SCHED
 from . import _common as C
@@ -55,7 +56,52 @@ def _spend_and_fallbacks(ns_dir: Path, modes: tuple[str, ...], k: int) -> tuple[
     return fell_back, usd
 
 
+def _feedback_tasks(ns_dir: Path, modes: tuple[str, ...]) -> tuple[bool, int]:
+    """Separate namespace opt-in from tasks actually selected with human notes.
+
+    A task selected in multiple requested modes counts once. Empty notes and
+    unrequested or unsuccessful selections do not count as steered tasks.
+    """
+    enabled = False
+    for name in ("config.json", ".feedback.json"):
+        try:
+            identity = json.loads((ns_dir / name).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(identity, dict):
+            enabled = enabled or identity.get("feedback") is True
+    steered = set()
+    for summary_path in sorted(ns_dir.glob("*/summary.json")):
+        try:
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        selections = summary.get("selections") or {}
+        for mode in modes:
+            sel = selections.get(mode) or {}
+            fingerprint = sel.get("feedback_fingerprint")
+            if (
+                sel.get("ok")
+                and sel.get("chosen_label")
+                and sel.get("feedback_used", True)
+                and isinstance(fingerprint, str)
+                and fingerprint.strip()
+            ):
+                steered.add(str(summary.get("task_id") or summary_path.parent.name))
+                break
+    return enabled, len(steered)
+
+
 def main(argv: list[str] | None = None) -> int:
+    """Run `_main`, printing a misconfiguration as one remediation line."""
+    try:
+        return _main(argv)
+    except (config.ConfigError, ValueError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+
+def _main(argv: list[str] | None) -> int:
     p = argparse.ArgumentParser(
         prog="harness2.cli.report", description=__doc__, formatter_class=C.HelpFormatter
     )
@@ -79,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("--k named no scale")
 
     adapter = C.make_adapter(args.bench, args.subset, args.substrate)
-    rows, fell_back, usd = [], {}, {}
+    rows, fell_back, usd, feedback = [], {}, {}, {}
     for k in ks:
         ns_dir = C.runs_root_for(adapter) / C.summary_namespace(adapter, k, seed=args.seed)
         judged = ns_dir / "judged.json"
@@ -88,6 +134,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  ! no judged rows at {judged} — run cli.judge for k={k} first", flush=True)
             continue
         rows.extend(r for r in got if r.mode in modes)
+        feedback[k] = _feedback_tasks(ns_dir, modes)
         fb, sp = _spend_and_fallbacks(ns_dir, modes, k)
         fell_back.update(fb)
         usd.update(sp)
@@ -101,6 +148,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     summaries = R.summarise(rows, fell_back=fell_back, usd=usd)
     print(R.render(summaries, title=title, bench=adapter.spec.name))
+    for k, (enabled, count) in feedback.items():
+        if enabled or count:
+            state = "enabled" if enabled else "not marked (selection evidence present)"
+            print(
+                f"\n  ! k={k}: human feedback namespace: {state}; "
+                f"{count} selected task(s) with human feedback in the requested modes."
+            )
+        if count:
+            print(
+                "    Feedback-influenced results are not directly comparable to "
+                "runs without human feedback."
+            )
     spend = sum(s.usd for s in summaries)
     if spend:
         print(

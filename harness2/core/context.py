@@ -20,6 +20,7 @@
     context/harness/<rel>            the c1..c8 tree being edited
     context/library/INDEX.md         earlier tasks in this domain + their full harnesses
     context/pool/<label>/            candidate harness + its rollout (aggregate / select only)
+    context/feedback.md              a person's notes on this task, only when feedback is on
     MISSION.md                       what to do with all of it
 
 Evidence is served as files and the prompt is a short pointer, so nothing is truncated to fit
@@ -30,6 +31,7 @@ from __future__ import annotations
 
 import difflib
 import fnmatch
+import hashlib
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,6 +39,10 @@ from typing import Mapping, Sequence
 
 from . import tree as harness_tree
 from .spec import BenchmarkAdapter, RunView
+
+FEEDBACK_LAYOUT_LINE = (
+    "context/feedback.md             notes from the person who reviewed this task"
+)
 
 
 @dataclass
@@ -55,11 +61,14 @@ class ContextTree:
     deliverables_mode: str = "contents"
     source_files: int = 0
     decisions: int = 0
+    feedback: bool = False
 
     @property
     def layout(self) -> str:
         """The evidence-layout listing that goes in the mission; only mentions what exists."""
         lines = ["context/task.md                  the task as the agent received it"]
+        if self.feedback:
+            lines.append(FEEDBACK_LAYOUT_LINE)
         if self.source_files:
             lines.append("context/source/                 task source materials")
         if self.decisions:
@@ -113,10 +122,12 @@ def build(
     pool: Sequence[tuple[str, Path, RunView | None]] = (),
     decisions: Mapping[str, str] | None = None,
     obs_trunc: int | None = None,
+    feedback: str = "",
 ) -> ContextTree:
     """Write the evidence tree; return what landed, so the mission describes only that.
 
     `obs_trunc` applies per observation, but a trajectory as a whole is written in full.
+    `feedback` is a person's notes on the task (core.feedback); empty leaves no file.
     Runs inside `recursion._run_stage`'s failure domain, so an adapter bug raised here is
     recorded as a stage error; only the trajectory and deliverable readers are caught,
     because their failure is itself evidence.
@@ -129,6 +140,11 @@ def build(
     trunc = obs_trunc if obs_trunc is not None else adapter.spec.obs_trunc
 
     (dest / "task.md").write_text(adapter.task_prompt(task_id), encoding="utf-8")
+    if feedback:
+        from .feedback import validate_text
+
+        feedback = validate_text(feedback)
+        (dest / "feedback.md").write_text(feedback + "\n", encoding="utf-8")
     source_files = copy_source(adapter, task_id, dest)
     for label, notes in (decisions or {}).items():
         path = dest / "decisions" / f"{label}.md"
@@ -185,19 +201,15 @@ def build(
         deliverables_mode=("names" if names_only else "contents"),
         source_files=source_files,
         decisions=len(decisions or {}),
+        feedback=bool(feedback),
     )
 
 
-def copy_source(adapter: BenchmarkAdapter, task_id: str, root: Path) -> int:
-    """Copy the task's source material under `root`, minus answer-key paths."""
+def _source_files(adapter: BenchmarkAdapter, task_id: str):
     src_fn = getattr(adapter, "task_files", None)
-    if not callable(src_fn):
-        return 0
-    src = src_fn(task_id)
+    src = src_fn(task_id) if callable(src_fn) else None
     if not src or not Path(src).is_dir():
-        return 0
-    dst = root / "source"
-    src_n = 0
+        return
     for f in sorted(Path(src).rglob("*")):
         if not f.is_file() or "__pycache__" in f.parts:
             continue
@@ -207,13 +219,34 @@ def copy_source(adapter: BenchmarkAdapter, task_id: str, root: Path) -> int:
             for g in adapter.spec.leak_globs
         ):
             continue
-        t = dst / rel
-        t.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(f, t)
-        src_n += 1
-    if src_n:
+        yield rel, f
+
+
+def source_fingerprint(adapter: BenchmarkAdapter, task_id: str) -> str:
+    """Content identity of precisely the source files allowed into task context."""
+    h = hashlib.sha256()
+    for rel, path in _source_files(adapter, task_id):
+        h.update(rel.encode("utf-8"))
+        h.update(b"\0")
+        with path.open("rb") as stream:
+            content = hashlib.file_digest(stream, "sha256").digest()
+        h.update(content)
+        h.update(b"\0")
+    return h.hexdigest()
+
+
+def copy_source(adapter: BenchmarkAdapter, task_id: str, root: Path) -> int:
+    """Copy the task's source material under `root`, minus answer-key paths."""
+    dst = root / "source"
+    count = 0
+    for rel, source in _source_files(adapter, task_id):
+        target = dst / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        count += 1
+    if count:
         assert_no_leak_paths(dst, adapter.spec.leak_globs)
-    return src_n
+    return count
 
 
 def _write_rollout(dest: Path, r: RunView, adapter, trunc: int, names_only: bool) -> str:

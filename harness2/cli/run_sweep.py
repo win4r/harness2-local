@@ -39,7 +39,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .. import config
-from ..core import schedule
+from ..core import feedback, schedule
 from ..core.proposer import Proposer
 from . import _common as C
 
@@ -69,6 +69,14 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="print the stream order, the namespaces and the split's domains, then "
         "exit — no rollouts, no sessions, nothing written",
+    )
+    g.add_argument(
+        "--feedback-dir",
+        type=Path,
+        default=None,
+        help="optional flat directory of UTF-8 <task>.md human notes for selection "
+        "and reflection; '/' in task IDs becomes '__'. Off by default; marks "
+        "the run as human-steered rather than answer-free",
     )
     return p
 
@@ -132,14 +140,15 @@ def _main(args: argparse.Namespace) -> int:
     if args.k < 1 or args.workers < 1:
         raise ValueError("--k and --workers must be positive")
     modes = C.parse_modes(args.modes)
-
-    if args.dry_run:
-        return _print_stream(
-            C.make_adapter(args.bench, args.subset, args.substrate, args.split_file), args, modes
-        )
-
     adapter = C.make_adapter(args.bench, args.subset, args.substrate, args.split_file)
-    _stream_for(adapter, args)
+    _, stream = _stream_for(adapter, args)
+    snapshot = feedback.freeze(args.feedback_dir, [task for _, task in stream])
+    if snapshot.unmatched:
+        print(f"feedback: ignoring unmatched files: {', '.join(snapshot.unmatched)}")
+    if args.dry_run:
+        if snapshot.enabled:
+            print("# human feedback enabled; notes validated and frozen; no models called")
+        return _print_stream(adapter, args, modes)
     from ..preflight import require_ready
 
     require_ready(adapter, judge=True)
@@ -170,6 +179,7 @@ def _main(args: argparse.Namespace) -> int:
         only_domains=only,
         max_tasks=args.max_tasks,
         pool_policy="finals",
+        feedback_snapshot=snapshot,
     )
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -225,14 +235,34 @@ def _check_identity(adapter, args, namespace_dir: Path) -> None:
     }
     namespace_dir.mkdir(parents=True, exist_ok=True)
     path = namespace_dir / "config.json"
-    if path.is_file():
-        if json.loads(path.read_text()) != json.loads(json.dumps(identity)):
-            raise ValueError(
-                "This run directory belongs to different models or tasks. "
-                "Choose a new HARNESS2_RUNS_DIR for a new experiment."
-            )
-    else:
-        path.write_text(json.dumps(identity, indent=2) + "\n", encoding="utf-8")
+    # Independent mode processes share this namespace. Claim its identity under
+    # one lock before either process can start paid executor work.
+    import fcntl
+
+    with path.with_suffix(".lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        with_feedback = getattr(args, "feedback_dir", None) is not None
+        publish = not path.is_file()
+        if path.is_file():
+            recorded = json.loads(path.read_text())
+            steered = bool(recorded.pop("feedback", False))
+            if recorded != json.loads(json.dumps(identity)):
+                raise ValueError(
+                    "This run directory belongs to different models or tasks. "
+                    "Choose a new HARNESS2_RUNS_DIR for a new experiment."
+                )
+            if steered and not with_feedback:
+                raise ValueError(
+                    "This run directory was steered by human feedback. Pass --feedback-dir "
+                    "again, or choose a new HARNESS2_RUNS_DIR for a run without it."
+                )
+            publish = with_feedback and not steered
+        if publish:
+            if with_feedback:
+                identity["feedback"] = True
+            temporary = path.with_suffix(".json.tmp")
+            temporary.write_text(json.dumps(identity, indent=2) + "\n", encoding="utf-8")
+            temporary.replace(path)
 
 
 if __name__ == "__main__":

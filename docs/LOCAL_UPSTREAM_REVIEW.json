@@ -1,0 +1,533 @@
+{
+  "upstream": "https://github.com/google-research/harness2",
+  "base_commit": "1cfe254e8d25b15f37048c3730134686abe60335",
+  "inventory_fetched_at": "2026-10-18T15:40:40.688731+00:00",
+  "local_version": "0.1.0+local.1",
+  "scope": "All 43 PR metadata and all 6 issue discussions triaged; selected patches reviewed in detail and locally adapted, not wholesale upstream merges. Local-only fork; no remote repository created.",
+  "adapted_pr_count": 19,
+  "prs": [
+    {
+      "number": 1,
+      "url": "https://github.com/google-research/harness2/pull/1",
+      "title": "Bump litellm from 1.95.0 to 1.95.1",
+      "author": "dependabot[bot]",
+      "head_sha": "6bfc58d213848ff8714f9ddeba2fcbd7489e8dda",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Optional proxy dependency upgrade not adopted without live bridge compatibility testing"
+    },
+    {
+      "number": 3,
+      "url": "https://github.com/google-research/harness2/pull/3",
+      "title": "Fix broken relative links in third_party docs",
+      "author": "kvishalv",
+      "head_sha": "863a15564ad409af7c63eb08537c5c8829b4afbd",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Documentation-only link cleanup; unrelated to local runtime correctness"
+    },
+    {
+      "number": 6,
+      "url": "https://github.com/google-research/harness2/pull/6",
+      "title": "Add opt-in human feedback for selection and reflection",
+      "author": "debashishthakur",
+      "head_sha": "932967a32c0f7e79d8ab22ff3e0a78458e7ea97c",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Opt-in human feedback, adapted with frozen snapshot and core identity checks"
+    },
+    {
+      "number": 7,
+      "url": "https://github.com/google-research/harness2/pull/7",
+      "title": "fix(setup): ship referenced environment example",
+      "author": "rudycelekli",
+      "head_sha": "7cd1ea6ea1a250c1794f7878e1552e8867570d16",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Ship missing environment example"
+    },
+    {
+      "number": 8,
+      "url": "https://github.com/google-research/harness2/pull/8",
+      "title": "fix(config): parse comments after quoted dotenv values",
+      "author": "rudycelekli",
+      "head_sha": "3ea4082b60d29e723f8c6a19ed6b97405226a6d5",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Dotenv inline-comment parsing deferred; example uses unquoted simple values"
+    },
+    {
+      "number": 9,
+      "url": "https://github.com/google-research/harness2/pull/9",
+      "title": "fix(workflow): propagate benchmark report failures",
+      "author": "rudycelekli",
+      "head_sha": "e72bb12a46ca1fc0e64ad6ed5485e6dd21f07237",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Propagate workflow report subprocess failures"
+    },
+    {
+      "number": 10,
+      "url": "https://github.com/google-research/harness2/pull/10",
+      "title": "fix(report): compare k=1 modes only on matched graded tasks",
+      "author": "rudycelekli",
+      "head_sha": "a6e2fd3e1bedd5e9d1a013ed2acc212a23f96166",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Compare k=1 modes only on matched graded tasks"
+    },
+    {
+      "number": 11,
+      "url": "https://github.com/google-research/harness2/pull/11",
+      "title": "fix(codex): preserve tool items in rollout evidence",
+      "author": "rudycelekli",
+      "head_sha": "7b5bcd0f2e93d1e7d3f23b211d4eb7fce52b2d94",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Retain Codex file/MCP/collaboration/web tool evidence"
+    },
+    {
+      "number": 12,
+      "url": "https://github.com/google-research/harness2/pull/12",
+      "title": "fix(judge): keep incomplete grades unscored",
+      "author": "rudycelekli",
+      "head_sha": "c177ee755500795c548c99be10bdafe6129e56f6",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Keep incomplete or invalid grades unscored"
+    },
+    {
+      "number": 13,
+      "url": "https://github.com/google-research/harness2/pull/13",
+      "title": "fix(proposer): reject OpenCode session errors before caching output",
+      "author": "rudycelekli",
+      "head_sha": "148b792af95ff7265f90f3678ba2955b045c63b9",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Reject fatal OpenCode session errors before caching"
+    },
+    {
+      "number": 14,
+      "url": "https://github.com/google-research/harness2/pull/14",
+      "title": "fix: preserve distinct artifact renderings in proposer context",
+      "author": "rudycelekli",
+      "head_sha": "ead40504c8e2dfaa52d2d447ce371f1c57b1d8ca",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Additional artifact-rendering change deferred from this bounded integration"
+    },
+    {
+      "number": 15,
+      "url": "https://github.com/google-research/harness2/pull/15",
+      "title": "fix: reserve negative seed namespace spellings in tags",
+      "author": "rudycelekli",
+      "head_sha": "eef069b5e744e82b85ba95fd0854227329660770",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Negative seed tag spelling fix deferred; use integer --seed rather than seed-like tags"
+    },
+    {
+      "number": 16,
+      "url": "https://github.com/google-research/harness2/pull/16",
+      "title": "fix(workbuddy): decode Git paths in deliverable listings",
+      "author": "rudycelekli",
+      "head_sha": "728a4e76afc657139cbf5430940793924921dfbd",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "WorkBuddy-specific Git path quoting not exercised in local smoke tests"
+    },
+    {
+      "number": 17,
+      "url": "https://github.com/google-research/harness2/pull/17",
+      "title": "fix(workflow): preserve seed across refinement and grading",
+      "author": "rudycelekli",
+      "head_sha": "d1bf6f02481c3765bff25dd6d503d9e7dd88e2ce",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Whole benchmark workflow seed plumbing deferred; invoke refinement/judge/report with matching explicit --seed"
+    },
+    {
+      "number": 18,
+      "url": "https://github.com/google-research/harness2/pull/18",
+      "title": "fix(jobbench): parse run identity from its path suffix",
+      "author": "rudycelekli",
+      "head_sha": "9f4638f3431cbe7b239aea69e81dd9d01952cbd4",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "JobBench path suffix identity parser deferred"
+    },
+    {
+      "number": 19,
+      "url": "https://github.com/google-research/harness2/pull/19",
+      "title": "fix(workbuddy): preserve verifier score precision",
+      "author": "rudycelekli",
+      "head_sha": "2dcfbdfc3456a428b69588341c9662cf7f0c96ec",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "WorkBuddy score precision change deferred"
+    },
+    {
+      "number": 20,
+      "url": "https://github.com/google-research/harness2/pull/20",
+      "title": "fix(workbuddy): quote filesystem paths in job YAML",
+      "author": "rudycelekli",
+      "head_sha": "d51178c304b62bf2deacd0c382e223a1ff395b6e",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "WorkBuddy container YAML path quoting deferred"
+    },
+    {
+      "number": 21,
+      "url": "https://github.com/google-research/harness2/pull/21",
+      "title": "fix: invalidate resumed tasks when experience prefix changes",
+      "author": "rudycelekli",
+      "head_sha": "ccb2f49c15068cd4df5ac1dd3c38eb2c0e389a90",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "covered",
+      "reason": "Covered by the integrated PR36 library-prefix identity scheme"
+    },
+    {
+      "number": 22,
+      "url": "https://github.com/google-research/harness2/pull/22",
+      "title": "fix(lab): clear prior artifacts before repeated Codex runs",
+      "author": "rudycelekli",
+      "head_sha": "d1fde3f9134632c868fa6d9f41f536d0a81b5878",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "LAB Codex artifact lifecycle change deferred"
+    },
+    {
+      "number": 23,
+      "url": "https://github.com/google-research/harness2/pull/23",
+      "title": "fix(lab): propagate OpenCode executor exit status",
+      "author": "rudycelekli",
+      "head_sha": "20872e5f989721aa9bb52dd7cec04346d9e88d0a",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "LAB OpenCode runner exit propagation deferred; independent from workflow report failure fix"
+    },
+    {
+      "number": 24,
+      "url": "https://github.com/google-research/harness2/pull/24",
+      "title": "fix(lab): reject conflicting fenced judge verdicts",
+      "author": "rudycelekli",
+      "head_sha": "8d3dcf0de8ebaa327e6ca7c1b20720aafb0a1b42",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Reject conflicting LAB fenced judge verdicts"
+    },
+    {
+      "number": 25,
+      "url": "https://github.com/google-research/harness2/pull/25",
+      "title": "fix(packaging): include benchmark assets in source distributions",
+      "author": "rudycelekli",
+      "head_sha": "5a6f3e8aa5158886915a380e2d648ff0326b1bae",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Include runners and provenance assets in source distributions"
+    },
+    {
+      "number": 26,
+      "url": "https://github.com/google-research/harness2/pull/26",
+      "title": "fix: serialize fresh run identity claims",
+      "author": "rudycelekli",
+      "head_sha": "5df7973f26b46ffdfa0822f8171c2a8ffa52de83",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Serialize fresh run identity claims"
+    },
+    {
+      "number": 27,
+      "url": "https://github.com/google-research/harness2/pull/27",
+      "title": "fix(lab): retain relative artifact paths for grading",
+      "author": "rudycelekli",
+      "head_sha": "3203b51e5dea4904241d23a8713ead186edff7f8",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "LAB relative artifact path mapping deferred"
+    },
+    {
+      "number": 28,
+      "url": "https://github.com/google-research/harness2/pull/28",
+      "title": "fix(jobbench): keep judge worker exceptions ungraded",
+      "author": "rudycelekli",
+      "head_sha": "02544f1a40fa90acff239c3912fcec2ee839c3ba",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Keep JobBench judge worker exceptions ungraded"
+    },
+    {
+      "number": 29,
+      "url": "https://github.com/google-research/harness2/pull/29",
+      "title": "fix: resume valid requested modes from partial summaries",
+      "author": "rudycelekli",
+      "head_sha": "56a11f6925370930242cae3ea1803cc76a8a2901",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Resume valid requested modes from partial summaries"
+    },
+    {
+      "number": 30,
+      "url": "https://github.com/google-research/harness2/pull/30",
+      "title": "fix(workbuddy): verify installed CLI versions match their pins",
+      "author": "rudycelekli",
+      "head_sha": "4fc076f445537c68ffa25fd7aefcb29704d27c4f",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "WorkBuddy installed CLI version verification deferred"
+    },
+    {
+      "number": 31,
+      "url": "https://github.com/google-research/harness2/pull/31",
+      "title": "fix(workbuddy): include cached tokens in OpenCode prompt totals",
+      "author": "rudycelekli",
+      "head_sha": "ee5e0cb38fb1c948c0910aee164ca3eec59f155f",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "WorkBuddy cached-token accounting deferred"
+    },
+    {
+      "number": 32,
+      "url": "https://github.com/google-research/harness2/pull/32",
+      "title": "fix(tree): enforce editable-tree, symlink, and reserved-script containment",
+      "author": "jacob-adm",
+      "head_sha": "28a0508cf22afc137094206a34389a5e9b64a844",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Enforce editable tree containment and reserved helpers"
+    },
+    {
+      "number": 33,
+      "url": "https://github.com/google-research/harness2/pull/33",
+      "title": "fix(recursion): keep a rejected attempt's on-surface edits for its retry",
+      "author": "anmolg1997",
+      "head_sha": "a0fd38bfd73fb3f3af4876cd2bd7a10242f3b564",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Preserve valid edits for rejected-attempt retry"
+    },
+    {
+      "number": 34,
+      "url": "https://github.com/google-research/harness2/pull/34",
+      "title": "fix(codex): refuse a loopback bridge URL for WorkBuddy containers",
+      "author": "anmolg1997",
+      "head_sha": "a7569e7bd33f9d146dd473d959a87fc86b3d0eee",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "WorkBuddy container bridge URL check deferred"
+    },
+    {
+      "number": 35,
+      "url": "https://github.com/google-research/harness2/pull/35",
+      "title": "fix(repo): ignore downloaded dependencies, run outputs and .env",
+      "author": "anmolg1997",
+      "head_sha": "3bcd4edd1fe6524e7ef451d4b365926c182d0729",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Ignore local secrets, environments, runs and downloads"
+    },
+    {
+      "number": 36,
+      "url": "https://github.com/google-research/harness2/pull/36",
+      "title": "fix(schedule): re-run tasks on resume when rendered selection/experience prompts change",
+      "author": "jacob-adm",
+      "head_sha": "d338a59bf0ae627bab96ff26b5171e337afb8e60",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Bind resume to library prefix and rendered selection/reflection prompts"
+    },
+    {
+      "number": 37,
+      "url": "https://github.com/google-research/harness2/pull/37",
+      "title": "fix: scrub runner and host secrets from subprocess environments",
+      "author": "jacob-adm",
+      "head_sha": "621c89e691aac4f1dfa5348343c06308e94d2be7",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Subprocess credential-environment policy deferred pending provider authentication matrix"
+    },
+    {
+      "number": 40,
+      "url": "https://github.com/google-research/harness2/pull/40",
+      "title": "fix: scrub subprocess env secrets and clean CLI error reporting",
+      "author": "KunjShah95",
+      "head_sha": "89528b7b70568c3388f443cd1ede465a606b7aef",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Overlaps environment policy and CLI reporting; report/judge error handling adopted via47"
+    },
+    {
+      "number": 41,
+      "url": "https://github.com/google-research/harness2/pull/41",
+      "title": "fix(codex): preserve tool items in rollout evidence",
+      "author": "KunjShah95",
+      "head_sha": "79fe6ca5d70f5ae863bcb8fcff8a1e86642a2dfb",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Title says Codex tool evidence but fetched diff actually carries PR23 LAB exit-status changes; not blindly applied"
+    },
+    {
+      "number": 42,
+      "url": "https://github.com/google-research/harness2/pull/42",
+      "title": "fix(jobbench): keep judge worker exceptions ungraded",
+      "author": "KunjShah95",
+      "head_sha": "1739c30f2864d650edfc80b8eb1bc462de12efd3",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "covered",
+      "reason": "Byte-identical duplicate of PR28; applied once"
+    },
+    {
+      "number": 43,
+      "url": "https://github.com/google-research/harness2/pull/43",
+      "title": "fix(runmark): skip symlinks when fingerprinting",
+      "author": "KunjShah95",
+      "head_sha": "b82f99993614caf2b4e9ddeb9e40b43d389af4e9",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "covered",
+      "reason": "Runmark symlink skipping covered by broader containment implementation from32"
+    },
+    {
+      "number": 45,
+      "url": "https://github.com/google-research/harness2/pull/45",
+      "title": "Keep a cached grade only for the same selection",
+      "author": "Bortlesboat",
+      "head_sha": "157ba5eb0ed4ab5181f671c0b6574e6dc6c66a28",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Bind cached grades to actual selection generation"
+    },
+    {
+      "number": 46,
+      "url": "https://github.com/google-research/harness2/pull/46",
+      "title": "docs: add Board decision-skill example",
+      "author": "jalarrea2",
+      "head_sha": "20ae8379dd6b3c8e00e0e0982fc6ca50a46dec8b",
+      "state_at_review": "closed",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Closed documentation-only Board example, not a runtime feature"
+    },
+    {
+      "number": 47,
+      "url": "https://github.com/google-research/harness2/pull/47",
+      "title": "fix (cli) - print judge/report configuration errors as one line fixes #38",
+      "author": "Yasas-Sri",
+      "head_sha": "3b332f1e21f1987b430244b8a2f3e34ae0300495",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Print concise judge/report configuration errors"
+    },
+    {
+      "number": 48,
+      "url": "https://github.com/google-research/harness2/pull/48",
+      "title": "fix(proposer): isolate cached replies and harnesses by channel configuration",
+      "author": "uttamdeb",
+      "head_sha": "414f67c7ed209ecaedc16ea46d11f8ec10a855d8",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Isolate proposer cache by effective channel configuration"
+    },
+    {
+      "number": 49,
+      "url": "https://github.com/google-research/harness2/pull/49",
+      "title": "Reject incomplete task split files",
+      "author": "Vaishnavi220506",
+      "head_sha": "5b07082c384b3f4c10bdcf95a514c7ea66cddde6",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Split-file completeness validation deferred; no custom split file used in local demo"
+    }
+  ],
+  "issues": [
+    {
+      "number": 44,
+      "url": "https://github.com/google-research/harness2/issues/44",
+      "title": "harness2-judge keeps an old grade after a task is re-run if the re-judge fails",
+      "decision": "Fixed via PR45 plus fail-closed legacy selection timestamp handling"
+    },
+    {
+      "number": 39,
+      "url": "https://github.com/google-research/harness2/issues/39",
+      "title": "Related-work citation request: Project Peritus\u2019s harness evolution",
+      "decision": "Related-work citation request; no runtime bug or fork code action"
+    },
+    {
+      "number": 38,
+      "url": "https://github.com/google-research/harness2/issues/38",
+      "title": "harness2-judge and harness2-report print tracebacks for some invalid arguments and missing settings",
+      "decision": "Fixed via PR47 and clean CLI feedback errors"
+    },
+    {
+      "number": 5,
+      "url": "https://github.com/google-research/harness2/issues/5",
+      "title": "Proposal: `--bench local`, run Harness\u00b2 on your own folder of tasks",
+      "decision": "Deferred: needs own real executor/task protocol beyond this reviewed feature set"
+    },
+    {
+      "number": 4,
+      "url": "https://github.com/google-research/harness2/issues/4",
+      "title": "Proposal: `--max-usd` spend limit for `harness2` runs",
+      "decision": "Deferred: executor dollar costs incomplete; a hard dollar cap would mislead"
+    },
+    {
+      "number": 2,
+      "url": "https://github.com/google-research/harness2/issues/2",
+      "title": "Proposal: opt-in human feedback for selection and lessons (off by default)",
+      "decision": "Implemented via adapted PR6"
+    }
+  ],
+  "additional_local_changes": [
+    "Freeze human notes once per stream and validate unmatched UTF8/size/path collisions",
+    "Sticky core/API/demo feedback identity; actual-use reporting distinct from enabled flag",
+    "Reject stale task/source/base/channel identity with fresh-root remediation",
+    "Prevent legacy unstamped grades from surviving a failed rejudge; validate finite weighted counts",
+    "Effective timeout and harvest path cache binding; reserved-script restoration during retry",
+    "Isolated local installer, offline launcher, pinned PR provenance and local release packaging",
+    "Invalidate requested selections before rerun output mutation so failed reruns cannot retain old grades; preserve unrequested modes",
+    "Exclude only the current task own prior lesson when checking direct API resume; restore verified lesson on skip",
+    "Bind authoring prompt templates and shared context instructions to each mode execution namespace; reject changed or legacy editor identity"
+  ],
+  "attribution": "Original Google notices and PR contributor license headers retained. Author/head SHA links identify adapted contributions; no claim that these open PRs were accepted upstream."
+}
