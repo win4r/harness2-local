@@ -3,7 +3,7 @@
   "base_commit": "1cfe254e8d25b15f37048c3730134686abe60335",
   "inventory_fetched_at": "2026-10-18T15:40:40.688731+00:00",
   "local_version": "0.1.0+local.1",
-  "scope": "All 43 PR metadata and all 6 issue discussions triaged; selected patches reviewed in detail and locally adapted, not wholesale upstream merges. Local-only fork; no remote repository created.",
+  "scope": "All 43 PR metadata and all 6 issue discussions triaged; selected patches reviewed in detail and locally adapted, not wholesale upstream merges. At the time of this initial review, the fork was local-only and no remote repository had been created.",
   "adapted_pr_count": 19,
   "prs": [
     {

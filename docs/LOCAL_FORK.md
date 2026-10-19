@@ -1,10 +1,10 @@
-# Harness2 本地 fork
+# Harness2 fork 使用说明
 
-版本 `0.1.0+local.1`。基于上游 `1cfe254e8d25b15f37048c3730134686abe60335`，保留原始 Git 历史和 Apache-2.0 许可；本地分支为 `local/main`，`upstream` 指向 Google 原仓库。本版本没有上传为 GitHub 远程 fork，也不覆盖此前的实验仓库或结果。
+版本 `0.1.0+local.1`。基于上游 `1cfe254e8d25b15f37048c3730134686abe60335`，保留原始 Git 历史和 Apache-2.0 许可。公开仓库为 [win4r/harness2-local](https://github.com/win4r/harness2-local)，默认分支为 `main`。原工作区继续使用 `local/main`，`origin` 指向公开仓库，`upstream` 指向 Google 原仓库；此前的实验仓库和结果保留。
 
 ## 本地启动
 
-当前目录已有独立 `.venv`。直接双击 `start-demo.command`，或在仓库根目录运行：
+原工作区已有独立 `.venv`。直接双击 `start-demo.command`，或在仓库根目录运行：
 
 ```bash
 ./start-demo.command
@@ -12,12 +12,16 @@
 
 它运行两项本地账本任务，采用真实 Python 执行和确定性编辑器，验证并行与顺序流程，不调用模型、不需要凭据。结果在 `runs/local-demo/demo.json`；再次运行会恢复已完成任务。
 
-在另一台机器或从源码包恢复后，先安装 uv，再运行：
+在另一台机器上先安装 uv，再克隆并安装：
 
 ```bash
+git clone https://github.com/win4r/harness2-local.git
+cd harness2-local
 ./scripts/local-install.sh
 ./start-demo.command
 ```
+
+从源码包恢复时，在解压后的根目录运行后两条命令即可。
 
 安装只作用于这个 fork 的 `.venv`，支持 Python 3.12/3.13。正式模型、JobBench、LAB、WorkBuddy 的依赖和凭据仍按上游 [SETUP.md](SETUP.md) 配置。macOS 离线演示不代表所有 Linux/Docker 正式基准已验证；本轮未重新跑付费模型或官方基准。
 
@@ -56,14 +60,15 @@ printf '%s\n' '核对贷项与借项都计入总额，并说明采用方案的�
 
 旧版没有输入身份记录的任务缓存会被拒绝，必须使用新目录。经验前缀或选择/反思提示发生变化时，本版可能重新运行；有模型的运行会产生新调用。不要把旧实测产物复制进新 fork 的 `runs/`。当前未加入 issue #5 的自定义任务文件夹执行器，也未加入 issue #4 的 `--max-usd`：执行器费用仍不完整，不能将记录中的零成本视为免费或可靠预算控制。可用已有 `--max-tasks` 限制任务规模。
 
-本轮回归、离线双模式演示、反馈恢复和打包检查结果写入 `docs/LOCAL_VALIDATION.json`。最终 Git bundle、归档和提交的一致性记录，以及原版失败证据和 PR 原始数据，保存在本 fork 外的 `outputs/fork-review/`。
+本地版本的回归、离线双模式演示、反馈恢复和打包检查结果见 [LOCAL_VALIDATION.json](LOCAL_VALIDATION.json)。该记录与 PR 清单保留发布前的验证快照。原交付的 Git bundle、归档、失败证据和 PR 原始数据保存在维护者工作区的 `outputs/fork-review/`，不随公开仓库分发；公开仓库包含完整源码、测试夹具、文档、许可证及资源校验清单。
 
 ## 更新和保留本地版本
 
 ```bash
+git remote add upstream https://github.com/google-research/harness2.git  # 仅首次克隆后需要
 git status
 git fetch upstream
-git log --oneline local/main..upstream/main
+git log --oneline HEAD..upstream/main
 ```
 
-先查看变化再决定如何合并；不要将 `local/main` 重置到上游。交付的 Git bundle 可在新目录用 `git clone -b local/main /路径/harness2-local.bundle 新目录` 恢复完整本地版本；从 bundle 恢复后可执行 `git remote add upstream https://github.com/google-research/harness2.git` 重新添加上游远端。普通源码包需要重新创建 `.venv`；wheel 不含所有第三方基准资源，正式基准应从源码目录运行。
+已有 `upstream` 时跳过添加远端的命令。先查看变化再决定如何合并；不要将本 fork 的工作分支重置到上游。原交付的 Git bundle 可在新目录用 `git clone -b local/main /路径/harness2-local.bundle 新目录` 恢复发布前的本地版本，再添加上游远端。普通源码包需要重新创建 `.venv`；wheel 不含所有第三方基准资源，正式基准应从源码目录运行。

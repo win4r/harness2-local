@@ -1,7 +1,22 @@
-> **Local fork · 0.1.0+local.1** — Independently maintained local copy, based on
-> upstream `1cfe254`. Includes reviewed opt-in human feedback and correctness fixes.
-> See [本地使用与变更说明](docs/LOCAL_FORK.md) and [PR provenance](docs/LOCAL_UPSTREAM_REVIEW.json).
-> Run `./start-demo.command` for the offline demo. Original upstream README follows.
+> **Community fork · 0.1.0+local.1** — [win4r/harness2-local](https://github.com/win4r/harness2-local),
+> based on [google-research/harness2](https://github.com/google-research/harness2) at `1cfe254`.
+> Integrates changes from 19 reviewed upstream PRs, including opt-in human feedback,
+> resume/cache correctness, grading fixes, and complete source packaging.
+> See [使用与变更说明](docs/LOCAL_FORK.md), [PR provenance](docs/LOCAL_UPSTREAM_REVIEW.json),
+> and the [local validation record](docs/LOCAL_VALIDATION.json).
+
+With [uv](https://docs.astral.sh/uv/getting-started/installation/) installed:
+
+```bash
+git clone https://github.com/win4r/harness2-local.git
+cd harness2-local
+./scripts/local-install.sh
+./start-demo.command
+```
+
+The offline demo needs no model credentials. The local release passed 95 regression
+tests and 9 CLI scenarios on macOS/Python 3.12; these checks do not establish live-model
+quality or official benchmark improvements. Original upstream README follows.
 
 <h3 align="center">
   <img src="assets/Harness2-wordmark.png" alt="Harness²" width="360"><br>
