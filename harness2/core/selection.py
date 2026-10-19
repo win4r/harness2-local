@@ -71,6 +71,7 @@ class Selection:
     experience_layout: str = ""
     candidate_format_sha256: str = ""
     feedback_fingerprint: str = ""
+    replayed_usd: float = 0.0
 
     def to_dict(self) -> dict:
         return {k: v for k, v in self.__dict__.items()}
@@ -148,7 +149,7 @@ def _render_pool(
             except Exception as exc:
                 sel.dropped.append(f"{lbl} (trajectory failed: {type(exc).__name__}: {exc})"[:200])
                 continue
-            if not body.strip() or body.startswith("(no trajectory"):
+            if context.is_missing_trajectory(body):
                 continue
             pool[lbl] = rv
             artifacts[lbl] = (
@@ -455,6 +456,7 @@ def run_selection(
     try:
         reply = prop.call(mission, root, f"select.{mode}{k}")
         sel.usd += reply.cost_usd
+        sel.replayed_usd += reply.replayed_usd
         m = _CHOICE.search(reply.text)
         if not m:
             raise ValueError("no ```choice block in the reply")
@@ -617,6 +619,7 @@ def _distil(
         sel.usd += exc.cost_usd
         return {}
     sel.usd += reply.cost_usd
+    sel.replayed_usd += reply.replayed_usd
     edits = _EDITS.search(reply.text)
     if edits:
         (root / "edits.md").write_text(edits.group(1).strip() + "\n", encoding="utf-8")

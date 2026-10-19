@@ -4,6 +4,7 @@ recursive-include docs *.md
 include docs/LOCAL_UPSTREAM_REVIEW.json
 include docs/LOCAL_VALIDATION.json
 recursive-include scripts *.py *.sh
+recursive-include examples *.py *.md *.csv
 recursive-include tests *.py *.json *.jsonl *.md *.txt LICENSE .gitattributes
 recursive-include third_party *
 include dependencies/README.md dependencies/PINNED.md dependencies/ASSETS.json

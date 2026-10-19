@@ -23,6 +23,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -82,6 +83,7 @@ class Reply:
     error: str = ""
     audit: Path | None = None
     workspace: Path | None = None
+    replayed_usd: float = 0.0
 
     def __bool__(self) -> bool:
         return self.ok
@@ -148,6 +150,11 @@ class Proposer:
         if cached is not None:
             self._calls.append(cached)
             return cached
+
+        # Completion marker must disappear before any harvested workspace changes.
+        paths = self._paths(label, cache_key)
+        if paths:
+            paths["meta"].unlink(missing_ok=True)
 
         tries = max(1, int(self.attempts if max_attempts is None else max_attempts))
         last = ""
@@ -356,11 +363,26 @@ class Proposer:
         self, label: str, cache_key: str = "", *, require_workspace: bool = False
     ) -> Reply | None:
         p = self._paths(label, cache_key)
-        if not p or not p["response"].is_file():
+        if not p:
             return None
-        if require_workspace and (not p["workspace"].is_dir() or p["workspace"].is_symlink()):
+        try:
+            meta = json.loads(p["meta"].read_text(encoding="utf-8"))
+            if not isinstance(meta, dict) or meta.get("ok") is not True:
+                return None
+            response = p["response"].read_bytes()
+            if meta.get("response_sha256") != hashlib.sha256(response).hexdigest():
+                return None
+            txt = response.decode("utf-8")
+            workspace = None
+            workspace_digest = meta.get("workspace_sha256")
+            if workspace_digest is not None:
+                if workspace_digest != _workspace_digest(p["workspace"]):
+                    return None
+                workspace = p["workspace"]
+            if require_workspace and workspace is None:
+                return None
+        except (OSError, UnicodeError, ValueError):
             return None
-        txt = p["response"].read_text(encoding="utf-8", errors="replace")
         if not txt.strip():
             return None
         return Reply(
@@ -371,18 +393,21 @@ class Proposer:
             cached=True,
             channel=self.spec.kind,
             audit=p["response"],
-            workspace=p["workspace"] if p["workspace"].is_dir() else None,
+            workspace=workspace,
+            replayed_usd=_replayed_cost(p["meta"]),
         )
 
     def _write_audit(self, r: Reply, mission: str, system: str, cache_key: str = "") -> None:
         p = self._paths(r.label, cache_key)
         if not p:
             return
-        p["mission"].write_text(mission, encoding="utf-8")
+        _atomic_write_text(p["mission"], mission)
         if system:
-            p["system"].write_text(system, encoding="utf-8")
-        p["response"].write_text(r.text, encoding="utf-8")
-        p["meta"].write_text(
+            _atomic_write_text(p["system"], system)
+        _atomic_write_text(p["response"], r.text)
+        # Publish the completion marker only after all artifacts are complete.
+        _atomic_write_text(
+            p["meta"],
             json.dumps(
                 {
                     "label": r.label,
@@ -394,12 +419,64 @@ class Proposer:
                     "wall_s": r.wall_s,
                     "cost_usd": r.cost_usd,
                     "error": r.error,
+                    "response_sha256": hashlib.sha256(r.text.encode("utf-8")).hexdigest(),
+                    "workspace_sha256": _workspace_digest(r.workspace) if r.workspace else None,
                 },
                 indent=2,
             ),
-            encoding="utf-8",
         )
         r.audit = p["response"]
+
+
+def _replayed_cost(meta: Path) -> float:
+    """Cost recorded in meta.json when the cached response was produced, if trustworthy."""
+    try:
+        recorded = json.loads(meta.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0.0
+    if not isinstance(recorded, dict) or recorded.get("ok") is not True:
+        return 0.0
+    cost = recorded.get("cost_usd")
+    if isinstance(cost, bool) or not isinstance(cost, (int, float)):
+        return 0.0
+    try:
+        value = float(cost)
+    except OverflowError:
+        return 0.0
+    return value if math.isfinite(value) and value >= 0 else 0.0
+
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Replace one audit file without exposing a partially written file."""
+    with tempfile.NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", delete=False) as f:
+        temporary = Path(f.name)
+        try:
+            f.write(text.encode("utf-8"))
+            f.close()
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
+
+def _workspace_digest(root: Path) -> str:
+    """Hash the paths and contents of a harvested tree, including empty directories."""
+    if not root.is_dir() or root.is_symlink():
+        raise OSError(f"invalid cached workspace: {root}")
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink():
+            raise OSError(f"unexpected symlink in cached workspace: {path}")
+        digest.update(path.relative_to(root).as_posix().encode("utf-8") + b"\0")
+        if path.is_dir():
+            digest.update(b"d\0")
+        elif path.is_file():
+            digest.update(b"f\0")
+            with path.open("rb") as f:
+                digest.update(hashlib.file_digest(f, "sha256").digest())
+        else:
+            raise OSError(f"invalid cached workspace entry: {path}")
+    return digest.hexdigest()
 
 
 def _drop_workspace(paths: dict[str, Path] | None) -> None:

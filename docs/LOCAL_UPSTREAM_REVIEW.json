@@ -2,9 +2,9 @@
   "upstream": "https://github.com/google-research/harness2",
   "base_commit": "1cfe254e8d25b15f37048c3730134686abe60335",
   "inventory_fetched_at": "2026-10-18T15:40:40.688731+00:00",
-  "local_version": "0.1.0+local.1",
-  "scope": "All 43 PR metadata and all 6 issue discussions triaged; selected patches reviewed in detail and locally adapted, not wholesale upstream merges. At the time of this initial review, the fork was local-only and no remote repository had been created.",
-  "adapted_pr_count": 19,
+  "local_version": "0.1.0+local.2",
+  "scope": "Initial review triaged metadata for 43 PRs and discussions for 6 issues. Follow-up inventory contains 59 PRs; 16 new PRs and the updated PR48 were examined, with selected patches tested and locally adapted. In total 33 PR changes are adapted, not wholesale upstream merges. The follow-up is not a fresh audit of every old PR or every issue.",
+  "adapted_pr_count": 33,
   "prs": [
     {
       "number": 1,
@@ -466,7 +466,10 @@
       "state_at_review": "open",
       "merged_at_review": null,
       "decision": "adapted",
-      "reason": "Isolate proposer cache by effective channel configuration"
+      "reason": "Isolate proposer cache by effective channel configuration",
+      "latest_reviewed_head_sha": "459ced547f10618aca01c35e4056502e15a03941",
+      "followup_decision": "retain_current_implementation",
+      "followup_reason": "Only new delta removes timeout from cache identity; original bug is already fixed locally and conservative effective-timeout plus harvest binding is retained."
     },
     {
       "number": 49,
@@ -478,6 +481,196 @@
       "merged_at_review": null,
       "decision": "deferred",
       "reason": "Split-file completeness validation deferred; no custom split file used in local demo"
+    },
+    {
+      "number": 51,
+      "url": "https://github.com/google-research/harness2/pull/51",
+      "title": "fix(setup): let --dry-run preview Codex setup without an endpoint",
+      "author": "akkupratap323",
+      "head_sha": "2dde63a0637db3cf77674eceb9aa652e408df74b",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Codex setup dry-run works before endpoint is configured",
+      "local_adaptation": "direct"
+    },
+    {
+      "number": 52,
+      "url": "https://github.com/google-research/harness2/pull/52",
+      "title": "fix(bridge): refuse to start without a model to serve",
+      "author": "akkupratap323",
+      "head_sha": "da4dc5eb8dbaa587d705203f34cae0c59fed704a",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Bridge rejects empty model before writing credentials/config or starting server",
+      "local_adaptation": "direct"
+    },
+    {
+      "number": 53,
+      "url": "https://github.com/google-research/harness2/pull/53",
+      "title": "fix(report): show per-cell spend in summary lines",
+      "author": "uttamdeb",
+      "head_sha": "8778877f1d5f43ce87475d553242d99d3ea2b616",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Report displays per-cell recorded spend",
+      "local_adaptation": "joint report adaptation with68"
+    },
+    {
+      "number": 54,
+      "url": "https://github.com/google-research/harness2/pull/54",
+      "title": "Serialize shared per-domain experience streams across processes",
+      "author": "codebreaker77",
+      "head_sha": "e70b75d42de8d86766aa53d0d46fab869b7973e3",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Serialize shared per-domain experience streams across processes",
+      "local_adaptation": "preserve local feedback snapshot and resume behavior"
+    },
+    {
+      "number": 56,
+      "url": "https://github.com/google-research/harness2/pull/56",
+      "title": "feat(examples): add inspectable local ledger exercises",
+      "author": "aronchick",
+      "head_sha": "3434d3ea1ddf95b6382450babba4c250210e9d70",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Inspectable offline ledger exercise and correctness inspector",
+      "local_adaptation": "include examples and CSV in source distribution"
+    },
+    {
+      "number": 58,
+      "url": "https://github.com/google-research/harness2/pull/58",
+      "title": "docs: add a progressive getting-started guide",
+      "author": "aronchick",
+      "head_sha": "1994232060f3ceffc316f181b8f51881aad96749",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Progressive getting-started guide",
+      "local_adaptation": "use public fork clone URL"
+    },
+    {
+      "number": 60,
+      "url": "https://github.com/google-research/harness2/pull/60",
+      "title": "docs(examples): explain local ledger commands and evidence",
+      "author": "aronchick",
+      "head_sha": "b94c8ec877599df3bf5989b6b3624bd3a9fe85c9",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Explain ledger commands, saved evidence and limitations",
+      "local_adaptation": "depends on56 and58"
+    },
+    {
+      "number": 62,
+      "url": "https://github.com/google-research/harness2/pull/62",
+      "title": "docs: explain when to use Harness2 and link first steps",
+      "author": "aronchick",
+      "head_sha": "f5196ac50be24d19866a164e248ee141c7fb5cd5",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Explain when to use the framework and link the guide",
+      "local_adaptation": "preserve community fork notice"
+    },
+    {
+      "number": 63,
+      "url": "https://github.com/google-research/harness2/pull/63",
+      "title": "Ao/harness2 1/getting started",
+      "author": "aronchick",
+      "head_sha": "ee55a238f8fde9c3aa0b1e8a32ee3cafb38070e5",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "covered",
+      "reason": "Aggregates56/58/60/62 and already adopted7/35; do not apply twice or count as another independent feature."
+    },
+    {
+      "number": 66,
+      "url": "https://github.com/google-research/harness2/pull/66",
+      "title": "Add Claude Code (cc) and Pi (pi) substrates for JobBench",
+      "author": "quantum-shubham",
+      "head_sha": "facce977f4c1d4cbb952ca89263e73b529fd7e5a",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "deferred",
+      "reason": "Controlled Pi terminal model error and Claude nonzero-exit processes leave partial files yet runner reports success. Pi1.3.0 offline no-prompt startup also loads ancestor AGENTS.md despite isolation claims. No live provider capability was validated."
+    },
+    {
+      "number": 67,
+      "url": "https://github.com/google-research/harness2/pull/67",
+      "title": "fix(context): keep a pool candidate's trajectory when its deliverable fails to render",
+      "author": "uttamdeb",
+      "head_sha": "f3b2ac71b7ba5265c1908ed86f5f87f8f23ad3f4",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Preserve independent trajectory and deliverable evidence when one extractor fails",
+      "local_adaptation": "direct"
+    },
+    {
+      "number": 68,
+      "url": "https://github.com/google-research/harness2/pull/68",
+      "title": "fix(report): retain ungraded count when no tasks are graded",
+      "author": "zbw123456",
+      "head_sha": "b86cfc255b54b97d35510db3d40be88638095f56",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Retain ungraded count when every task is ungraded",
+      "local_adaptation": "joint report adaptation with53"
+    },
+    {
+      "number": 69,
+      "url": "https://github.com/google-research/harness2/pull/69",
+      "title": "fix(proposer): reject incomplete audit cache entries",
+      "author": "zbw123456",
+      "head_sha": "2b2f3add77279340374eca38f2fe2f22b507c4b9",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Reject truncated and incomplete proposer audit cache entries",
+      "local_adaptation": "preserve channel/timeout/harvest binding and update cache fixtures"
+    },
+    {
+      "number": 70,
+      "url": "https://github.com/google-research/harness2/pull/70",
+      "title": "fix(context): match leak globs that start with a dot",
+      "author": "hyeonsang010716",
+      "head_sha": "4bd686d6db536e8b1305d28dc0fa70aaa7530509",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Match leading-dot leak globs consistently in source copy and fingerprint",
+      "local_adaptation": "use local shared source traversal"
+    },
+    {
+      "number": 72,
+      "url": "https://github.com/google-research/harness2/pull/72",
+      "title": "fix(core): reject unparseable trajectory sentinels in context, selection, and resume",
+      "author": "hahahahah1287",
+      "head_sha": "df2ccd0a07c2bf3d35d1e34446d0bee80106c57c",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Reject missing or unparseable trajectory sentinel strings during context/selection/resume",
+      "local_adaptation": "preserve local identity and resume checks"
+    },
+    {
+      "number": 74,
+      "url": "https://github.com/google-research/harness2/pull/74",
+      "title": "fix(report): count improver spend replayed from the audit cache",
+      "author": "leo922oel",
+      "head_sha": "807ed7323982c58d625e4b9d0b65fe5cc1d29fd9",
+      "state_at_review": "open",
+      "merged_at_review": null,
+      "decision": "adapted",
+      "reason": "Preserve historical attributed improver spend during cached partial reruns",
+      "local_adaptation": "reconcile69 integrity marker and local partial-mode resume"
     }
   ],
   "issues": [
@@ -490,7 +683,7 @@
     {
       "number": 39,
       "url": "https://github.com/google-research/harness2/issues/39",
-      "title": "Related-work citation request: Project Peritus\u2019s harness evolution",
+      "title": "Related-work citation request: Project Peritus’s harness evolution",
       "decision": "Related-work citation request; no runtime bug or fork code action"
     },
     {
@@ -502,7 +695,7 @@
     {
       "number": 5,
       "url": "https://github.com/google-research/harness2/issues/5",
-      "title": "Proposal: `--bench local`, run Harness\u00b2 on your own folder of tasks",
+      "title": "Proposal: `--bench local`, run Harness² on your own folder of tasks",
       "decision": "Deferred: needs own real executor/task protocol beyond this reviewed feature set"
     },
     {
@@ -529,5 +722,46 @@
     "Exclude only the current task own prior lesson when checking direct API resume; restore verified lesson on skip",
     "Bind authoring prompt templates and shared context instructions to each mode execution namespace; reject changed or legacy editor identity"
   ],
-  "attribution": "Original Google notices and PR contributor license headers retained. Author/head SHA links identify adapted contributions; no claim that these open PRs were accepted upstream."
+  "attribution": "Original Google notices and PR contributor license headers retained. Author/head SHA links identify adapted contributions; no claim that these open PRs were accepted upstream.",
+  "followup_inventory_checked_at": "2026-10-19T05:08:48.594823+00:00",
+  "review_rounds": [
+    {
+      "version": "0.1.0+local.1",
+      "inventory_checked_at": "2026-10-18T15:40:40.688731+00:00",
+      "pr_inventory_count": 43,
+      "adapted_pr_count": 19
+    },
+    {
+      "version": "0.1.0+local.2",
+      "inventory_checked_at": "2026-10-19T05:08:48.594823+00:00",
+      "pr_inventory_count": 59,
+      "new_prs_examined": 16,
+      "updated_existing_prs_examined": [
+        48
+      ],
+      "newly_adapted_prs": [
+        51,
+        52,
+        53,
+        54,
+        56,
+        58,
+        60,
+        62,
+        67,
+        68,
+        69,
+        70,
+        72,
+        74
+      ],
+      "integration_base": "9a586d5fffc4109f6976e38dae3c9b8774b0c04f",
+      "reviewed_patch_sha256": "56a13234387171e8306a7efc273cac1bda52e4de060d439dfd927ef07d0296db"
+    }
+  ],
+  "migration_notes": [
+    "69 invalidates legacy proposer cache entries without new integrity digests; a future real rerun may make new model calls.",
+    "74 records replayed historical improver-session attribution, not new charges; executor/judge/interrupted-call costs remain incomplete, so no hard USD budget guarantee.",
+    "54 protects cooperating run_domain/run_sweep experience library streams; arbitrary direct run_task/Library writes and disjoint-mode shared execution artifacts are outside scope."
+  ]
 }

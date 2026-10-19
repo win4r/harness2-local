@@ -1,20 +1,20 @@
 {
-  "version": "0.1.0+local.1",
+  "version": "0.1.0+local.2",
   "base_commit": "1cfe254e8d25b15f37048c3730134686abe60335",
-  "recorded_at_utc": "2026-10-18T15:55:25.516666+00:00",
+  "integration_base": "9a586d5fffc4109f6976e38dae3c9b8774b0c04f",
+  "recorded_at_utc": "2026-10-19T08:56:15.268316+00:00",
   "platform": "macOS-26.6.2-arm64-arm-64bit",
   "test_environment_python": "3.12.9 (main, Mar 11 2025, 17:41:32) [Clang 20.1.0 ]",
   "regression_suite": {
-    "recorded_at_utc": "2026-10-18T15:55:03.398541+00:00",
-    "python": "3.12.9 (main, Mar 11 2025, 17:41:32) [Clang 20.1.0 ]",
-    "tests_run": 95,
+    "recorded_at_utc": "2026-10-19T08:55:43.345002+00:00",
+    "tests_run": 148,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
     "expected_failures": 0,
     "unexpected_successes": 0,
     "passed": true,
-    "elapsed_seconds": 59.974,
+    "elapsed_seconds": 68.512,
     "checks": [
       {
         "name": "ruff",
@@ -37,7 +37,7 @@
         "passed": true
       }
     ],
-    "all_checks_pass": true
+    "all_pass": true
   },
   "cli_acceptance": {
     "scenario_count": 9,
@@ -47,104 +47,113 @@
       {
         "name": "plain-k1-first",
         "returncode": 0,
+        "expected_returncode": 0,
         "execution_count": 14,
         "editor_calls": 16
       },
       {
         "name": "plain-k1-resume",
         "returncode": 0,
+        "expected_returncode": 0,
         "execution_count": 0,
         "editor_calls": 0
       },
       {
         "name": "plain-k2-first",
         "returncode": 0,
+        "expected_returncode": 0,
         "execution_count": 28,
         "editor_calls": 32
       },
       {
         "name": "plain-k2-resume",
         "returncode": 0,
+        "expected_returncode": 0,
         "execution_count": 0,
         "editor_calls": 0
       },
       {
         "name": "feedback-first",
         "returncode": 0,
+        "expected_returncode": 0,
         "execution_count": 28,
         "editor_calls": 32
       },
       {
         "name": "feedback-resume",
         "returncode": 0,
+        "expected_returncode": 0,
         "execution_count": 0,
         "editor_calls": 0
       },
       {
         "name": "feedback-changed",
         "returncode": 0,
+        "expected_returncode": 0,
         "execution_count": 14,
         "editor_calls": 16
       },
       {
         "name": "feedback-omission-rejected",
         "returncode": 1,
+        "expected_returncode": 1,
         "execution_count": null,
         "editor_calls": null
       },
       {
         "name": "invalid-feedback-rejected",
         "returncode": 1,
+        "expected_returncode": 1,
         "execution_count": null,
         "editor_calls": null
       }
     ]
   },
-  "independent_interaction_review": {
-    "unrequested_mode_preserved": {
-      "failed_task": true,
-      "seq_selection_byte_equivalent": true,
-      "seq_artifact_hash_unchanged": true,
-      "agg_invalid_before_every_executor": true,
-      "observations": 4,
-      "agg_current_failed": true,
-      "agg_fresh_generation": true
-    },
-    "three_original_reproductions_fixed": {
-      "authoring_change_rejected_before_calls": true,
-      "unchanged_direct_library_skips": true,
-      "failed_rerun_invalidates_grade": true
-    },
-    "zero_model_calls": true
+  "reviewed_candidate_source_parity": {
+    "matched_reviewed_source_files": 97,
+    "all_pass": true,
+    "reviewed_patch_sha256": "56a13234387171e8306a7efc273cac1bda52e4de060d439dfd927ef07d0296db"
   },
   "release_assets_verified": 47,
-  "isolated_install_and_launcher": {
-    "passed": true,
-    "tasks": 2,
-    "done": 2,
-    "failed": 0,
-    "execution_count": 28,
-    "deterministic_editor_calls": 32
-  },
   "graphify_update": {
     "passed": true,
-    "nodes": 1297,
-    "edges": 3691,
+    "nodes": 1675,
+    "edges": 4273,
+    "communities": 214,
     "llm_calls": 0
   },
-  "live_provider_model_calls_this_fork_validation": 0,
+  "previous_candidate_validation": {
+    "scope": "Before release integration, pinned candidate patch evaluated in isolated checkouts; supplemental counts are controlled/offline cases, not model trials. Current release source parity was checked separately.",
+    "full_suite": {
+      "tests_run": 148,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "cli_unconfigured_dry_run_and_empty_model_cases": 5,
+    "tutorial_mode_k_matrix_scenarios": 6,
+    "actual_substrate_renderer_cases": 10,
+    "two_process_reverse_order_lock_acquisitions": 40,
+    "live_model_calls": 0
+  },
+  "live_provider_model_calls_this_release_validation": 0,
   "not_run": [
     "Official JobBench, LAB, WorkBuddy end-to-end model benchmarks",
     "Live provider or model quality comparisons",
     "Linux Docker benchmark installation",
-    "Python 3.13 regression run"
+    "Python 3.13 regression run",
+    "Claude Code/Pi new substrate acceptance (PR66 deferred)"
   ],
   "source_payload_sha256": {
     ".env.example": "3d55878a79033d3f845b6036a53e2c04cffeaaffee8f0ad9525348d50ad421d1",
-    "MANIFEST.in": "fdf69ecefbd32d3846effbedd92f1b02276f9b1b747902aa50ba96fc74d67c9c",
+    "MANIFEST.in": "14c3b2b2326416d575239feef05837479c3c5aa8d9d108e65cb79c969b3545b7",
     "dependencies/ASSETS.json": "e6241f0db661b88d9c2691b2f1f97fb79512e50b7b8448af339acf318a36143e",
     "dependencies/PINNED.md": "4d6b849df75fd900022fcc3765e7af971debdae57aac8176317a5ea90fe19dbd",
     "dependencies/README.md": "10dc39d7b1713dda734d83efbd3d81dc86c6c8c4403e378b1f000ceba91ee1dc",
+    "examples/getting_started/README.md": "6bb2a80acfa4c61d3a69454bd14e2ee16c54ba48bdc211f4b26bc2fe99ca10c4",
+    "examples/getting_started/ledger.py": "978c903ec1da98bedadcea5d7b732390daadf88180e1da9f052b853afae60ca9",
+    "examples/getting_started/ledgers/week-1.csv": "fa432e02c69bb6fca2d1a9ee4f10278f1f05f41c230f07df853c891a19dd01e6",
+    "examples/getting_started/ledgers/week-2.csv": "32a86bc7ee2786670280becc15a6a03c42d13fd8144a3800873aa0648db71c42",
     "harness2/__init__.py": "de20a79ef3cf3974bf32cb6afdbb32608655676e749a466ffd6c7c173bb7e26a",
     "harness2/benchmarks/__init__.py": "6c0fb1a1a69906258c5a0a7765aa7d0e862c71ac955707d938933f9c26f73fa8",
     "harness2/benchmarks/jb_opencode_runner.py": "aadfb0d1307b41da84900d353505c72d322937aef8f5400e2b95c7701ae9b768",
@@ -155,37 +164,37 @@
     "harness2/benchmarks/workbuddy.py": "1e08d17a9ad0b23a3b6dabc6da2d2e65a8110cba17d7882d5f113940f7dfeb91",
     "harness2/cli/__init__.py": "8fd4345e5586666df552582be8e8d69adbb4daffae69088b08a773400c844b78",
     "harness2/cli/_common.py": "aba8393739a6ae343ce95ef005c7037b737466f444064aba63735f2ac5a22037",
-    "harness2/cli/bridge.py": "6092475dd656eccbd454067fd20166d2ca44948d91d3c574b4da2e3b28e2af7e",
+    "harness2/cli/bridge.py": "d97005708a08f4b7b79419f8dc294caaa9a4555f1d60d340c894529222107688",
     "harness2/cli/check.py": "0c42509009b292613d46c7a87287036b5080116c14b0da4ead984896d108c2e0",
     "harness2/cli/demo.py": "0059e842014facd7b64b5b5f71fec8f46e9150fe24de008464e4bdaf6da51e06",
     "harness2/cli/judge.py": "27a25bca28775460690ccf50deaef435199cfe95214666b27ed29db8966f279f",
-    "harness2/cli/report.py": "1224682420f10dbbc8aeab9bd21ae0e495c811c9603c7a9703474c59ac0b96b6",
+    "harness2/cli/report.py": "3bdffd2039dcf0cacce6770d08568e03e4afc00805b82f9692e8f2d03a37c952",
     "harness2/cli/run_sweep.py": "985db1a611c30d87b88638e0a6bcf545237bc26e64421d594264734e9fd1adfb",
     "harness2/cli/setup.py": "c0a5438fcbea074e61b749554198638777f393c48d0a686161699e298ee18d0b",
     "harness2/config.py": "0db5ba0c42b87f5b14cbff2d11aaecddda1cd45500903c1d61741232bd1e0a88",
     "harness2/core/__init__.py": "ce487673e00fd8921139e3afb688c566fc43d9b07acba048d2102663a81f7151",
-    "harness2/core/context.py": "31921b5709cf3fe436faeb2c46824a778b6e182a435f5eee1f749ae5f6809b84",
+    "harness2/core/context.py": "3ba15d6fd8ea369db66d89427348f4fa0f6bbad95d13ec68687562aaa427fd0a",
     "harness2/core/feedback.py": "8f7ce06a79c43e7c108bed61a8f1a1f7ef438a0e903c6f57bb21520a5fdf0fe7",
     "harness2/core/judge.py": "a87848c71345c97d87a108678d1de8738930655b690c4ab8b4b072e10447306f",
-    "harness2/core/ledger.py": "7059de5d90fc9fb8d4b3b799ff075f09d34f182ba0fdb56eb9d8b8383d0bbf55",
-    "harness2/core/library.py": "00219fda201a030f43b35b49c4e73ccf336aedc81164144c435b4b06a1256dd3",
+    "harness2/core/ledger.py": "87581928479a13724a85b1c2a05da8e6a96970f61c823162dad66fa223dc7eb6",
+    "harness2/core/library.py": "c3bca9b62870c99628e979d7e6e34e3d71fcb903e74225494520fd436aff258d",
     "harness2/core/prompts.py": "30a64d68a096373da12e25a4b431d2411c6775a8611d399d21f71fffba877e02",
-    "harness2/core/proposer.py": "9052b56339295271c4a0555d838e1467e3c4f08629cd7a33af2dba683a4bdbd9",
-    "harness2/core/recursion.py": "f89e71344bf970ac77f869bbeea1b480650edaa9280837379a51cf0d75ca6414",
-    "harness2/core/report.py": "96a938e8108a341c5e3045a2dd53667287c17467bedc5e49609fc1cfa9aa78d3",
+    "harness2/core/proposer.py": "5127614bb746218a97003c4316d610257bf4aef1e6c37b7d5006803dcaba25e5",
+    "harness2/core/recursion.py": "cfe9468bf56c65b51be1a7929ab84c643c74bda3a47e2559bb3b5b4ca5e7d3e5",
+    "harness2/core/report.py": "5e2cd2d03a4eb1e47380a404908876de729e7c895aaf7ada1ffc243853153319",
     "harness2/core/runmark.py": "5732df38370d0415face4ad235e1ac031287fc04c8e61e1d13b6d908fd64c4fd",
-    "harness2/core/schedule.py": "f7641324583c68adbeb67a6a41181eaa9cf00216f1d0907d9357b6d74b1c7534",
-    "harness2/core/selection.py": "5cbf13e6ec3aea654ef2f8176b66f013526813df58e81e614c0a7c84f8399802",
+    "harness2/core/schedule.py": "ba6eb5f17b2a2cb7deb5062f10e7e666e58b67b6dc5cf26cc7846181eed985ef",
+    "harness2/core/selection.py": "3826dfc9ec90843ff9dddd960b2d39d670d224daa1409da50f251ff798307a36",
     "harness2/core/spec.py": "f245ec9e314778e2a1a51594b906584255b9eed8340c073b864a8a6f2c8dc400",
     "harness2/core/tree.py": "6d620ca47f88360fcf502719d9058bd61903bbab2570420df2e817c31f8dc2a6",
     "harness2/demo.py": "8f338b3254922a8a48d66162f7796dde435d3ef65a7ccd441ef604c81a1d39d4",
-    "harness2/install.py": "a75eaa452d405020a268864e1f047346ec10cb64b81c4045f6bda0f72bd152c4",
+    "harness2/install.py": "388d015fdc6d6f3a4c24f7af7714cfdbc4d0e2e72d7525ad324fc5633915fe03",
     "harness2/preflight.py": "78b6a7bc81ced28987f6d9a47bb20e7e5c6d70ff89f2a70cc9a6d179363d6c53",
     "harness2/substrate/__init__.py": "57f95d86cb0d4acfd60fddd52f2d140ffadcf0c318e28093532580339dc3f37d",
     "harness2/substrate/base.py": "50a63f174e3772888af3882f3ffff3162cefba8d36e927b1a5de343c5806dd16",
     "harness2/substrate/codex.py": "d958de5d7b9389f833d9d309fcac2f2de1b6f257a4d07548ee4d2622f9792dbb",
     "harness2/substrate/opencode.py": "dabc79953d164a0d38802125756379ffa6acdc7b553d2f9036475f8220166ff0",
-    "pyproject.toml": "1477477780db14785f2bd72df68c711d8a8d713525f09df9f632f7d537776290",
+    "pyproject.toml": "b23a62536f41bab2c71f81a0c85d6b0bde2766a81a9d012b19cbb991b45bb664",
     "scripts/check_provenance.py": "8824e1903e106b55005f7ad0ceb0de4db5353599298656f8fdbc7d025dbd8bcd",
     "scripts/check_setup.py": "80bbfc87370cce7f77884b963659180fd572d8795b6a60f87d87043d4a9011c1",
     "scripts/local-install.sh": "11147ea72bd3bf91b2458319d788515ecea28aa97aeb10e0a9fa754b24f8a9ce",
@@ -209,26 +218,37 @@
     "tests/fixtures/job-bench-eval/PROVENANCE.json": "1e79412f4a8452c4d511345ac7da35964f20411d3bea46c2a6bb3f8b2a47ec75",
     "tests/fixtures/job-bench-eval/judge.py.txt": "e83816acf6b9b923eab89324977a07a05ed760da3a7ca9a7394fd5460361408f",
     "tests/test_baseline_judge.py": "be56d6122fa749a2026d931350c852a104cc5d354a5f24c052587b55ab8d418c",
+    "tests/test_bridge_model.py": "71c3417fdce8c06e037a2db66e6ccbd323196b184ec65dd525ffc84695435aa2",
     "tests/test_cli_errors.py": "b8712c5b2c4284db2161e15d08e3821e2dc2f9fdc43fbcbf8818327755583449",
     "tests/test_codex_tool_items.py": "cc4a3aee0c5fe961e6e5e4e6631e5e078eb4087615b09d7b2cb0b999c90916d5",
+    "tests/test_context_leaks.py": "dc362ee559a0d641d573b120da1e9b6d14190b68ecff39107c2db2f1d96c3027",
+    "tests/test_domain_locking.py": "bacaeb1f389d650a28130826d77a50a06d5b2c08d61ffdadb30d7340638d340c",
     "tests/test_env_example.py": "e9eaa93e999826049f261871ccc7a2f9d7a1f64fa07e064c3891f567652eb703",
+    "tests/test_getting_started.py": "46b2c15db38bf4fa59406d7d49533a47203c9d80f4ddec64572cdfb8d8716eda",
     "tests/test_jobbench_worker_failure.py": "c37781ea13f38257f3267209805a605093bdffd08c20ad201ba90e3e857abdda",
     "tests/test_lab_judge_patch.py": "9e13ba50f7beab0b41cb6c507fbc6579f3de8669e8f7633d421bd1029bb48a6a",
     "tests/test_local_cli_feedback.py": "94a4c179e0ac08b05cc972cc929bbedff776419e678d2bae549612072df1982d",
     "tests/test_local_feedback.py": "70749fb09ccd820a74815b666c9db5ccf893087be71b3c34eb4d17bad4239363",
     "tests/test_local_feedback_report.py": "c529aa780f65ad99489c2550fe0f3817076e307776c2e50370b18b030791bac4",
     "tests/test_local_grading.py": "00dac485da2748171a3dcd1813c619f544b94ec016cbc99add332016eee97d20",
+    "tests/test_local_replayed_attribution.py": "edef57c1d523e8ca1982af58bcf4004ac0a986ab20921ff3a760df72951649fa",
     "tests/test_local_rerun_identity.py": "795aa6b341af35379dd80464e8e20e659a6f676823cf062bc1fa5dfba5c19a7e",
     "tests/test_local_resume.py": "486706a55d2aa7bc8c7ee68bed354546ee6803c849af7a7ecedaf26831add516",
     "tests/test_local_runtime_containment.py": "3a703c1d9b5bba160320572a310e3a49d84cf9aeeb2c5868dc6b81cb7c3b1869",
     "tests/test_local_runtime_proposer_cache.py": "0d720c74e2f0514b340c2a92f1942c930f825f0f7cd9b391312f7b21ac900c30",
     "tests/test_local_runtime_proposer_session_errors.py": "a22691c25a6c28fbf0b55bee35164aebcdb17f8ef2e645e188e180902d071dd5",
     "tests/test_local_runtime_stage_retry.py": "78e7bd659938f31bca47facc6d5413d753f2472aadba586438cd6d50273519f4",
+    "tests/test_pool_trajectory.py": "54f7b9647f1d32b5d6016e324d904523203b4e0293a45aa0980c6818a44d7332",
+    "tests/test_pr69_proposer_cache.py": "006f3e856bd5f06fcec15987e6cfb757ef79e25213676dc2c2d9ac9914f14605",
+    "tests/test_replayed_spend.py": "f9185f62e225783efb01167866bab23bcd6d4ab55d0d821ad792cdf31680aad6",
     "tests/test_report_coverage.py": "53b678bc86cae6ba82680f981f6484a2bd53f5032f1610e5367ee24789cb097a",
+    "tests/test_report_line.py": "fa5024a04f61cee19d894c227bc01d6d86840ce0e1c9fbc5bf5e4ce99373d856",
+    "tests/test_report_ungraded.py": "3b4e51cf88cf155f7cf85a39f8a5e56bd01d4530937a1518a4e0c2aa46fbf1f7",
     "tests/test_run_identity_lock.py": "39945cdedad27412328f77383131ec1a995a2c1690c84e8f05a5d6d77172ca29",
     "tests/test_runner_status.py": "b375e33e03dc8ee842ed88c2b24758d7208fc759ef8dfc9e964953991dab0bd9",
+    "tests/test_setup_dry_run.py": "280bfc73ecb1edae38479a096f1f3378e1986cc0333834d13a880caa81e3f162",
     "tests/test_source_distribution.py": "265ba9503824c5d64f9c50937a3f23e97cded48ad09fa27f318d5fd068b7f323",
-    "tests/test_workflow.py": "fda03aa8d1d4bb1a43b16a96da4a272427969a1a540cc0954709aeed7a03a4aa",
+    "tests/test_workflow.py": "595e200ed2207fb57cc10336fb41dfba1dd3e8cba2650086d0a1d2b210a74111",
     "third_party/README.md": "403e7226d5e579f9fc0f51a9de97a680b05daaff0af36ffe733e939e28b7ef08",
     "third_party/jb_runner/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
     "third_party/jb_runner/PROVENANCE.md": "7e16c8f5e43aa272baa5cf39bf245b42cf1f40f885457ac4123c91b7de0b06ef",
@@ -278,11 +298,6 @@
     "third_party/wb_runner/configs/harnesses/opencode/presets/settings/v1_14.json": "1cc19b36f9aa7a8b6a9bf84d63fed256b9e807ecc163c49c52add1c06e6bdc7b",
     "third_party/wb_runner/configs/harnesses/opencode/versions/1.14.18.yaml": "54cb6265d12b74098aab5425425b13afba581ac4a2c0cef43ba8ce6d7c1c9767"
   },
-  "evidence_location": "Outside this fork: outputs/fork-review/ contains logs, primary-source snapshots, before/after reproductions and final delivery.json. Archive and Git bundle recovery are recorded in delivery.json after this document is packaged.",
-  "post_suite_packaging_followup": {
-    "reason": "Archive parity found omitted fixture .gitattributes, CONTRIBUTING and README media; MANIFEST repaired, .gitignore included, all tracked files retained",
-    "source_distribution_tests_run": 2,
-    "passed": true,
-    "code_changes_after_full_suite": false
-  }
+  "evidence_location": "Outside this fork: outputs/release-local2/ contains final logs, archive-install verification, Git bundle and delivery.json. outputs/upstream-followup/20261019T050228Z/ contains pinned PR snapshots and detailed candidate reviews. These private local paths are not part of the public repository.",
+  "record_boundary": "This file records the release-source regression and CLI results before packaging. Actual final archive installation, all-tracked-file byte parity, tutorial execution, remote publication and fresh-clone verification are recorded afterward in the external delivery.json to avoid a self-referential archive hash. The earlier local.1 validation is retained in Git history."
 }

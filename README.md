@@ -1,7 +1,8 @@
-> **Community fork · 0.1.0+local.1** — [win4r/harness2-local](https://github.com/win4r/harness2-local),
+> **Community fork · 0.1.0+local.2** — [win4r/harness2-local](https://github.com/win4r/harness2-local),
 > based on [google-research/harness2](https://github.com/google-research/harness2) at `1cfe254`.
-> Integrates changes from 19 reviewed upstream PRs, including opt-in human feedback,
-> resume/cache correctness, grading fixes, and complete source packaging.
+> Integrates changes from 33 reviewed upstream PRs: the previous 19 plus 14 fixes
+> and tutorial contributions. Includes opt-in human feedback, cache and evidence
+> integrity, shared experience-stream locking, grading/reporting fixes, and local exercises.
 > See [使用与变更说明](docs/LOCAL_FORK.md), [PR provenance](docs/LOCAL_UPSTREAM_REVIEW.json),
 > and the [local validation record](docs/LOCAL_VALIDATION.json).
 
@@ -14,9 +15,14 @@ cd harness2-local
 ./start-demo.command
 ```
 
-The offline demo needs no model credentials. The local release passed 95 regression
-tests and 9 CLI scenarios on macOS/Python 3.12; these checks do not establish live-model
-quality or official benchmark improvements. Original upstream README follows.
+The offline demo needs no model credentials. Continue with the
+[getting-started guide](docs/GETTING_STARTED.md) and
+[editable ledger exercises](examples/getting_started/README.md). These use scripted
+edits and real local Python execution; they are not a generic task-folder executor
+or evidence of model-quality improvements. See the
+[validation record](docs/LOCAL_VALIDATION.json) for executed checks and their limits,
+and the [upgrade notes](docs/LOCAL_FORK.md#使用边界) before resuming existing model runs.
+The upstream project introduction follows, with the reviewed tutorial additions.
 
 <h3 align="center">
   <img src="assets/Harness2-wordmark.png" alt="Harness²" width="360"><br>
@@ -30,11 +36,41 @@ quality or official benchmark improvements. Original upstream README follows.
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-34A853" alt="License"></a>
 </p>
 
+New to Harness²? [Start with the local getting-started exercises](docs/GETTING_STARTED.md).
+
 <p align="center">
   <a href="docs/BENCHMARKS.md#jobbench">
     <img src="assets/harness2-setup.gif" alt="Install, set up, and run JobBench: uv pip install -e '.[render]', harness2-setup jb, then harness2 --bench jb --k 1 --mode parallel. Click for prerequisites and commands." width="640">
   </a>
 </p>
+
+## Start here
+
+Harness² helps you experiment with **how an agent does a recurring kind of
+work**. It runs a task, proposes changes to the agent's instructions and tools,
+tries those changes, and saves the chosen harness and lessons for later
+refinement. The model's weights stay fixed.
+
+Use it when you can inspect repeated tasks and their outputs: for example,
+reconciling weekly transaction files, preparing reports from source documents,
+or completing a collection of coding tasks. The release includes professional,
+legal, and office/web/code benchmarks. Your own task format needs a Python
+adapter.
+
+For a one-off bug fix or document, start with your usual coding agent. A clear
+instruction, a reusable script, or a test may solve the problem with less
+setup and fewer executions. Harness² is useful when you want to compare agent
+configurations systematically and can afford the extra runs. Saved lessons
+feed future Harness² improvement steps; they do not automatically update your
+everyday coding agent.
+
+**[Follow the getting-started path](docs/GETTING_STARTED.md)**: a five-minute
+local demo, a twenty-minute input change, an hour comparing runs, then optional
+benchmark and custom-workflow pilots. The first three exercises need no model
+credentials. Setup time and model runtime are separate from these reading and
+hands-on budgets.
+
+## How it works
 
 A **harness** is the system around a model that enables it to act as an agent:
 prompts, tools, memory, skills, orchestration, and more. **Harnessing** is the
@@ -73,6 +109,9 @@ https://github.com/user-attachments/assets/76b10548-b14b-4c8f-9aa5-a93662df4d56
 
 ## Contents
 
+- [Start here](#start-here)
+- [How it works](#how-it-works)
+- [Getting-started exercises](docs/GETTING_STARTED.md)
 - [Video overview](#video-overview)
 - [Harness components](#harness-components)
 - [Install](#install)

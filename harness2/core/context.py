@@ -214,10 +214,7 @@ def _source_files(adapter: BenchmarkAdapter, task_id: str):
         if not f.is_file() or "__pycache__" in f.parts:
             continue
         rel = f.relative_to(src).as_posix()
-        if any(
-            fnmatch.fnmatch(rel, g.lstrip("./")) or fnmatch.fnmatch(rel, f"*/{g.lstrip('./')}")
-            for g in adapter.spec.leak_globs
-        ):
+        if _is_leak_path(rel, adapter.spec.leak_globs):
             continue
         yield rel, f
 
@@ -249,13 +246,28 @@ def copy_source(adapter: BenchmarkAdapter, task_id: str, root: Path) -> int:
     return count
 
 
+_MISSING_TRAJECTORY_PREFIXES = (
+    "(no trajectory",
+    "(no parseable events in trajectory)",
+    "(failed to read trajectory:",
+    "(trajectory unavailable:",
+)
+
+
+def is_missing_trajectory(text: str) -> bool:
+    """Recognize the substrate/adapter missing-trajectory sentinels."""
+    stripped = (text or "").strip()
+    return not stripped or stripped.startswith(_MISSING_TRAJECTORY_PREFIXES)
+
+
 def _write_rollout(dest: Path, r: RunView, adapter, trunc: int, names_only: bool) -> str:
     """Write one rollout's trajectory and deliverables; return "" or the failure detail."""
     failure = ""
     try:
-        (dest / "rollouts" / f"{r.label}.md").write_text(
-            adapter.trajectory(r.run_dir, obs_trunc=trunc), encoding="utf-8"
-        )
+        traj = adapter.trajectory(r.run_dir, obs_trunc=trunc)
+        (dest / "rollouts" / f"{r.label}.md").write_text(traj, encoding="utf-8")
+        if is_missing_trajectory(traj):
+            failure = f"{r.label}: {traj.strip() or 'empty trajectory'}"
     except Exception as exc:
         (dest / "rollouts" / f"{r.label}.md").write_text(
             f"(trajectory unavailable: {type(exc).__name__}: {exc})", encoding="utf-8"
@@ -354,7 +366,9 @@ def _write_pool(
                 (d / "rollout.md").write_text(
                     adapter.trajectory(roll.run_dir, obs_trunc=trunc), encoding="utf-8"
                 )
-
+            except Exception as exc:
+                (d / "rollout.md").write_text(f"(unavailable: {exc})", encoding="utf-8")
+            try:
                 produced = (
                     _listing_md(label, _listing(adapter, roll.run_dir))
                     if names_only
@@ -362,7 +376,7 @@ def _write_pool(
                 )
                 (d / "produced.md").write_text(produced, encoding="utf-8")
             except Exception as exc:
-                (d / "rollout.md").write_text(f"(unavailable: {exc})", encoding="utf-8")
+                (d / "produced.md").write_text(f"(unavailable: {exc})", encoding="utf-8")
         got.append(label)
     return got
 
@@ -429,6 +443,22 @@ def _copy_tree(src: Path, dst: Path) -> int:
     return n
 
 
+def _leak_glob(pattern: str) -> str:
+    """A leak glob relative to the tree root: drop prefixes, keep dotted names."""
+    pat = str(pattern).replace("\\", "/")
+    while pat.startswith(("./", "/")):
+        pat = pat.removeprefix("./").removeprefix("/")
+    return pat
+
+
+def _is_leak_path(rel: str, patterns: Sequence[str]) -> bool:
+    for pattern in patterns:
+        pat = _leak_glob(pattern)
+        if fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(rel, f"*/{pat}"):
+            return True
+    return False
+
+
 def assert_no_leak_paths(root: Path | str, patterns: Sequence[str]) -> None:
     """Reject benchmark-declared answer-key paths before a context reaches a model."""
     root = Path(root)
@@ -439,11 +469,8 @@ def assert_no_leak_paths(root: Path | str, patterns: Sequence[str]) -> None:
         if not p.is_file():
             continue
         rel = p.relative_to(root).as_posix()
-        for pattern in patterns:
-            pat = str(pattern).replace("\\", "/").lstrip("./")
-            if fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(rel, f"*/{pat}"):
-                hits.append(rel)
-                break
+        if _is_leak_path(rel, patterns):
+            hits.append(rel)
     if hits:
         shown = ", ".join(sorted(hits)[:8])
         raise ValueError(f"answer-key path(s) would enter model context: {shown}")

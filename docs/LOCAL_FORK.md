@@ -1,6 +1,6 @@
 # Harness2 fork 使用说明
 
-版本 `0.1.0+local.1`。基于上游 `1cfe254e8d25b15f37048c3730134686abe60335`，保留原始 Git 历史和 Apache-2.0 许可。公开仓库为 [win4r/harness2-local](https://github.com/win4r/harness2-local)，默认分支为 `main`。原工作区继续使用 `local/main`，`origin` 指向公开仓库，`upstream` 指向 Google 原仓库；此前的实验仓库和结果保留。
+版本 `0.1.0+local.2`，累计移植 33 个审阅后的上游 PR：前版 19 个，本次新增 14 个。基于上游 `1cfe254e8d25b15f37048c3730134686abe60335`，保留原始 Git 历史和 Apache-2.0 许可。公开仓库为 [win4r/harness2-local](https://github.com/win4r/harness2-local)，默认分支为 `main`。原工作区继续使用 `local/main`，`origin` 指向公开仓库，`upstream` 指向 Google 原仓库；此前的实验仓库和结果保留。
 
 ## 本地启动
 
@@ -24,6 +24,28 @@ cd harness2-local
 从源码包恢复时，在解压后的根目录运行后两条命令即可。
 
 安装只作用于这个 fork 的 `.venv`，支持 Python 3.12/3.13。正式模型、JobBench、LAB、WorkBuddy 的依赖和凭据仍按上游 [SETUP.md](SETUP.md) 配置。macOS 离线演示不代表所有 Linux/Docker 正式基准已验证；本轮未重新跑付费模型或官方基准。
+
+新增的[渐进教程](GETTING_STARTED.md)和[账本练习](../examples/getting_started/README.md)支持修改 CSV、比较 `k=1/2` 与两种模式，并检查实际保存的答案：
+
+```bash
+.venv/bin/python examples/getting_started/ledger.py run \
+  --input-dir examples/getting_started/ledgers --output runs/ledger-example --k 1
+.venv/bin/python examples/getting_started/ledger.py inspect runs/ledger-example
+```
+
+练习拒绝已有输出目录，改输入后须换新目录。编辑与选择逻辑是预设的，执行和文件检查是真实的；它用于理解流程，不是模型质量证据，也不是通用任务文件夹执行器。
+
+## 本次更新
+
+- #54 为共享的同领域经验库增加跨进程流锁，避免另一轮任务在读取前删掉已保留的经验。
+- #69 拒绝不完整或损坏的 proposer 审计缓存，保留本 fork 原有的模型通道、超时和脚本回收身份校验。
+- #67/#72 在产物解析失败时保留独立轨迹证据，并拒绝把“轨迹缺失/无法解析”的占位文字当作有效证据用于选择或恢复。
+- #70 修复以点开头的答案键排除规则，使源文件复制与指纹计算采用一致边界。
+- #51/#52 允许尚未配置端点时预览 Codex 安装，并在模型名为空时阻止 bridge 启动。
+- #53/#68/#74 显示每组记录费用与全未评分计数，保留从缓存恢复的历史 improver 费用归属。
+- #56/#58/#60/#62 提供上述离线练习、教程与入口说明；源码包同时包含示例代码和 CSV。
+
+聚合 PR #63 与上述教程及已有配置改动重复，不另计入。#66 的 Claude Code/Pi 执行器暂未加入：受控复现中，终止错误与部分产物并存时仍被 runner 判为成功。
 
 ## 可选人工反馈
 
@@ -58,9 +80,13 @@ printf '%s\n' '核对贷项与借项都计入总额，并说明采用方案的�
 
 本版保持上游 finals-only 选择策略：`status=ok` 仍只表示流程完成，不等于答案正确，也没有增加自动语义验收或失败时从基线兜底。需要正确性、速度或业务指标保证时，必须另设独立检查。
 
-旧版没有输入身份记录的任务缓存会被拒绝，必须使用新目录。经验前缀或选择/反思提示发生变化时，本版可能重新运行；有模型的运行会产生新调用。不要把旧实测产物复制进新 fork 的 `runs/`。当前未加入 issue #5 的自定义任务文件夹执行器，也未加入 issue #4 的 `--max-usd`：执行器费用仍不完整，不能将记录中的零成本视为免费或可靠预算控制。可用已有 `--max-tasks` 限制任务规模。
+旧版没有输入身份记录的任务缓存会被拒绝，必须使用新目录。#69 还会将缺少完整性摘要的旧 proposer 缓存或不完整缓存视为未命中；升级本身不会调用模型，但之后重新运行需要这些回复的任务时，可能产生新模型调用。经验前缀或选择/反思提示变化也可能触发重跑。不要把旧实测产物复制进新 fork 的 `runs/`。
 
-本地版本的回归、离线双模式演示、反馈恢复和打包检查结果见 [LOCAL_VALIDATION.json](LOCAL_VALIDATION.json)。该记录与 PR 清单保留发布前的验证快照。原交付的 Git bundle、归档、失败证据和 PR 原始数据保存在维护者工作区的 `outputs/fork-review/`，不随公开仓库分发；公开仓库包含完整源码、测试夹具、文档、许可证及资源校验清单。
+`replayed_usd` 表示从缓存恢复的历史 improver 会话费用归属，不是本次新增扣费，也不是完整账单。执行器、裁判及中断调用的费用记录仍不完整；本版未加入 issue #4 的 `--max-usd`，不能把零值视为免费或把报告当作硬预算控制。可用已有 `--max-tasks` 限制任务规模。issue #5 的自定义任务文件夹执行器也尚未加入。
+
+#54 的锁适用于使用相同经验库路径、通过 `run_domain()`/`run_sweep()` 协作运行的 macOS/Linux 进程，会覆盖整个领域任务流。它不保护任意直接 `Library` 写入或独立 `run_task()` 调用，也不解决不同模式间共享执行产物的全部并发问题。不同领域及不重叠的模式经验库仍可独立推进。
+
+本地版本的回归、离线双模式演示、反馈恢复和打包检查结果见 [LOCAL_VALIDATION.json](LOCAL_VALIDATION.json)。该记录与 PR 清单保留发布前的验证快照。初版交付证据保存在维护者工作区的 `outputs/fork-review/`，本轮 PR 审查在 `outputs/upstream-followup/20261019T050228Z/`，新版本测试、源码包和 Git bundle 在 `outputs/release-local2/`。这些运行证据不随公开仓库分发；公开仓库包含完整源码、测试夹具、文档、许可证及资源校验清单。
 
 ## 更新和保留本地版本
 
